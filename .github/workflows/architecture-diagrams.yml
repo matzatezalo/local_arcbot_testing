@@ -33,10 +33,16 @@ jobs:
             echo "Mode: First-time generation (docs/architecture/ missing)"
           fi
 
+      - name: Test secret access
+        run: |
+          echo "TEST_SECRET value length: ${#TEST_SECRET}"
+        env:
+          TEST_SECRET: ${{ secrets.TEST_SECRET }}
+
       - name: Run architecture bot (via OpenAI)
         id: bot
         env:
-          OPENAI_API_KEY: ${{ inputs.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-4.1
         run: bash scripts/run_architecture_bot.sh "${{ steps.paths.outputs.analysis_paths }}"
 
