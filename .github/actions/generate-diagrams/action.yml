@@ -19,6 +19,11 @@ inputs:
     required: false
     default: ''
 
+outputs:
+  changed:
+    description: Whether diagrams were changed
+    value: ${{ steps.check.outputs.changed }}
+
 runs:
   using: composite
   steps:
