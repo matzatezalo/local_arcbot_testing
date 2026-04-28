@@ -33,18 +33,22 @@ jobs:
             echo "Mode: First-time generation (docs/architecture/ missing)"
           fi
 
-      - name: Debug - Show analysis paths
-        run: |
-          echo "analysis_paths output: ${{ steps.paths.outputs.analysis_paths }}"
-          echo "ANALYSIS_PATHS env: ${{ env.ANALYSIS_PATHS }}"
-          echo "docs/architecture exists: $(test -d docs/architecture && echo yes || echo no)"
-
       - name: Run architecture bot (via OpenAI)
         id: bot
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-4.1
         run: bash scripts/run_architecture_bot.sh "${{ steps.paths.outputs.analysis_paths }}"
+
+      - name: Check bot output
+        if: failure()
+        run: |
+          echo "Bot step failed. Checking environment..."
+          echo "OPENAI_API_KEY is set: $([ -n "$OPENAI_API_KEY" ] && echo yes || echo no)"
+          echo "Script exists: $([ -f scripts/run_architecture_bot.sh ] && echo yes || echo no)"
+          echo "Current directory: $(pwd)"
+          echo "Files in docs/:"
+          ls -la docs/ || true
 
       - name: Check if diagrams changed
         id: check
