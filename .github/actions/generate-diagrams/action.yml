@@ -14,10 +14,6 @@ inputs:
   base_sha:
     description: Base commit SHA
     required: true
-  comment_body:
-    description: Comment that triggered the action (if any)
-    required: false
-    default: ''
 
 runs:
   using: composite
@@ -42,7 +38,6 @@ runs:
         fi
 
     - name: Run architecture bot (via OpenAI)
-      id: bot
       shell: bash
       env:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
@@ -67,14 +62,3 @@ runs:
         name: diagram-changes
         path: diagram_changes.diff
 
-    - name: Commit diagrams (if changed)
-      if: steps.check.outputs.changed == 'true'
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-      run: |
-        git config user.name "architecture-bot"
-        git config user.email "bot@example.com"
-        git add docs/architecture/
-        git commit -m "docs: Update architecture diagrams [skip ci]"
-        git push origin ${{ inputs.head_ref }}
