@@ -1,30 +1,29 @@
 # Architecture Flow: Order Creation
 
 **Generated on:** April 28, 2026
-
-**Source Scope:** `src`
+**Source Scope:** `/src/api_gateway.py`, `/src/models.py`, `/src/order_repository.py`
 
 ## Mermaid Diagram
 
 ```mermaid
 flowchart TD
-    Start([Start: create_order]) --> InstantiateOrder[Instantiates Order with customerId and items]
-    InstantiateOrder --> SaveOrder[(Save Order to Repository)]
+    Start([Start: create_order]) --> CreateOrder[Create Order with customer_id and items]
+    CreateOrder --> SaveOrder[(Save Order to Repository)]
     SaveOrder --> CalcTotal[Calculate Order Total]
     CalcTotal --> SetStatus[Set Order Status to pending]
     SetStatus --> Return([Return Order])
 ```
 
-## Flow Description
+## Process Dictionary
 
-* **Start: create_order:** Entry point for order creation workflow, accepting customerId and items as input.
+* **Start: create_order:** Entry point when API client requests a new order with customer identifier and line items.
 
-* **Instantiates Order with customerId and items:** Creates Order entity, initializing orderId, status, and item list.
+* **Create Order with customer_id and items:** Instantiate new Order domain entity with provided parameters. Auto-generate unique orderId and initialize status as 'pending'.
 
-* **Save Order to Repository:** Persists Order in the in-memory repository using OrderRepository.save.
+* **Save Order to Repository:** Persist Order instance to in-memory repository storage via `OrderRepository.save()`.
 
-* **Calculate Order Total:** Computes the order total by iterating items and summing price × quantity for all entries.
+* **Calculate Order Total:** Invoke `Order.calculateTotal()` to compute sum of all line items. Total = Σ(item.price × item.qty).
 
-* **Set Order Status to pending:** Ensures the Order status is set to 'pending' until payment is processed.
+* **Set Order Status to pending:** Confirm Order status remains 'pending' until payment is processed.
 
-* **Return Order:** Returns the newly created Order entity with full data to the API caller.
+* **Return Order:** Send Order instance back to client with all computed fields populated.
