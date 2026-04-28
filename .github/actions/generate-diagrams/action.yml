@@ -32,7 +32,6 @@ runs:
       env:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
-
         ANALYSIS_PATHS: src
       run: |
         if [[ -d "docs/architecture" ]]; then

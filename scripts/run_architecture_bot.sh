@@ -73,12 +73,14 @@ CODEBASE_CONTEXT=""
 FILE_COUNT=0
 
 for path_pattern in "${PATHS[@]}"; do
+    echo "   Checking path: $path_pattern" >&2
     if [[ -f "$path_pattern" ]]; then
         # Single file - include all files
         CONTENT=$(cat "$path_pattern" 2>/dev/null || true)
         CODEBASE_CONTEXT+=$'\n\n'"# File: $path_pattern"$'\n'"'"'```'"'"$'\n'"$CONTENT"$'\n'"'"'```'"'"
         ((FILE_COUNT++))
     elif [[ -d "$path_pattern" ]]; then
+        echo "   Directory found, scanning files..." >&2
         # Directory - find all files
         while IFS= read -r source_file; do
             if [[ ! "$source_file" =~ __pycache__ ]] && [[ ! "$source_file" =~ \.git ]]; then
@@ -87,6 +89,8 @@ for path_pattern in "${PATHS[@]}"; do
                 ((FILE_COUNT++))
             fi
         done < <(find "$path_pattern" -type f 2>/dev/null)
+    else
+        print_warning "Path not found: $path_pattern"
     fi
 done
 
