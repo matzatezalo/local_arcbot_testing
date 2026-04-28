@@ -118,9 +118,22 @@ You MUST follow these rules EXACTLY from SKILL.md:
 Analyze this codebase:
 %CODEBASE%
 
-Generate the diagrams and return ONLY this JSON structure. DO NOT return analysis, warnings, or metadata. ONLY return the diagrams in this exact format:
+Generate the diagrams and return ONLY this JSON structure with metadata about your filtering decisions:
 
 {
+  "metadata": {
+    "classes_analyzed": 10,
+    "classes_included": 5,
+    "classes_excluded": 5,
+    "excluded_patterns": [
+      { "pattern": "DTO", "count": 2, "examples": ["OrderDTO", "PaymentDTO"] },
+      { "pattern": "Service", "count": 2, "examples": ["OrderService", "PaymentService"] },
+      { "pattern": "Mapper", "count": 1, "examples": ["OrderMapper"] }
+    ],
+    "methods_analyzed": 45,
+    "methods_included": 20,
+    "methods_excluded": 25
+  },
   "diagrams": [
     {
       "filename": "docs/architecture/uml_domain_model.md",
@@ -201,7 +214,6 @@ fi
 # Parse and write diagrams
 print_step "Writing diagrams to disk..."
 
-
 # Extract JSON from the response (assume raw JSON, no code blocks)
 JSON_CONTENT="$OPENAI_RESPONSE"
 
@@ -211,6 +223,37 @@ if ! echo "$JSON_CONTENT" | jq -e '.diagrams' >/dev/null 2>&1; then
     echo "Response preview:" >&2
     echo "$OPENAI_RESPONSE" | head -c 1000 >&2
     exit 1
+fi
+
+# Display SKILL filtering summary
+if echo "$JSON_CONTENT" | jq -e '.metadata' >/dev/null 2>&1; then
+    echo ""
+    print_success "✅ SKILL.md Successfully Applied"
+    echo ""
+    
+    CLASSES_ANALYZED=$(echo "$JSON_CONTENT" | jq -r '.metadata.classes_analyzed // 0')
+    CLASSES_INCLUDED=$(echo "$JSON_CONTENT" | jq -r '.metadata.classes_included // 0')
+    CLASSES_EXCLUDED=$(echo "$JSON_CONTENT" | jq -r '.metadata.classes_excluded // 0')
+    METHODS_ANALYZED=$(echo "$JSON_CONTENT" | jq -r '.metadata.methods_analyzed // 0')
+    METHODS_INCLUDED=$(echo "$JSON_CONTENT" | jq -r '.metadata.methods_included // 0')
+    METHODS_EXCLUDED=$(echo "$JSON_CONTENT" | jq -r '.metadata.methods_excluded // 0')
+    
+    echo "📊 Diagram Generation Summary:"
+    echo "   Classes Analyzed: $CLASSES_ANALYZED"
+    echo "   Classes Included: $CLASSES_INCLUDED"
+    echo "   Classes Excluded: $CLASSES_EXCLUDED"
+    echo ""
+    echo "   Methods Analyzed: $METHODS_ANALYZED"
+    echo "   Methods Included: $METHODS_INCLUDED"
+    echo "   Methods Excluded: $METHODS_EXCLUDED (getters/setters filtered by SKILL)"
+    echo ""
+    
+    # Display excluded patterns
+    if echo "$JSON_CONTENT" | jq -e '.metadata.excluded_patterns | length > 0' >/dev/null 2>&1; then
+        echo "🔍 Excluded Patterns (per SKILL rules):"
+        echo "$JSON_CONTENT" | jq -r '.metadata.excluded_patterns[] | "   • \(.pattern): \(.count) class(es) (\(.examples | join(", ")))"' 2>/dev/null || true
+        echo ""
+    fi
 fi
 
 # Extract and write each diagram
