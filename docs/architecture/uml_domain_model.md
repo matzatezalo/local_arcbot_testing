@@ -1,7 +1,8 @@
-# Architecture Model: Order Management Domain
+# Architecture Model: Domain
 
 **Generated on:** April 28, 2026
-**Source Scope:** `/src`
+
+**Source Scope:** `src`
 
 ## Mermaid Diagram
 
@@ -13,34 +14,41 @@ classDiagram
         +orderId: string
         +status: string
         +total: float
-        +calculateTotal() float
+        +calculateTotal(): float
         +markPaid()
     }
-
     class PriorityOrder {
         +priorityFee: float
-        +calculateTotal() float
+        +calculateTotal(): float
     }
-
     class Payment {
         +orderId: string
         +amount: float
         +providerRef: string
         +paymentId: string
         +status: string
+        +isSuccessful(): bool
+    }
+    class Refund {
+        +paymentId: string
+        +amount: float
+        +reason: string
+        +refundId: string
+        +status: string
+        +approve()
+        +complete()
     }
 
-    Order "1" --o "0..*" Payment
+    Order "1" o-- "0..*" Payment
+    Payment "1" o-- "0..*" Refund
 ```
 
 ## Entity Dictionary
 
-* **Order:** Primary domain entity representing a customer order. Maintains order state (pending/paid), item list, and calculated total. Responsible for computing total price and marking payment status.
+* **Order:** Represents a customer order containing items, customer ID, unique order ID, order status, and total price. Responsible for calculating totals and updating payment status.
 
-* **PriorityOrder:** Specialization of Order with premium handling. Adds a priority fee to the base order total. Overrides total calculation logic to include priority surcharge.
+* **PriorityOrder:** Specialized version of Order with a priority fee, altering total price calculation.
 
-* **Payment:** Domain entity representing a payment transaction for an order. Stores payment provider reference, amount, and transaction status. Used to track payment completion and support refund operations.
+* **Payment:** Represents a payment transaction with reference to an order, amount charged, payment provider reference, unique payment ID, and status. Can determine payment success.
 
-## Relationship Notes
-
-* **Order → Payment (Aggregation, 1..*):** One Order can have multiple associated Payments (e.g., partial payments, failed attempts). Payment maintains reference to Order via `orderId` field. Order lifecycle is independent of Payment.
+* **Refund:** Domain entity tracking refund transactions for a specific payment, including amount, reason, and status. Supports approval and completion lifecycle steps.
