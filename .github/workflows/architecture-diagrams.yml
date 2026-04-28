@@ -1,10 +1,12 @@
 name: Generate/Update Architecture Diagrams
 
 on:
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'docs/architecture/**' 
+  workflow_dispatch:
+    inputs:
+      openai_api_key:
+        description: 'OpenAI API key'
+        required: true
+        type: string 
 
 env:
   # Specify which paths the bot should analyze (should match paths: trigger above with whitespaces between directories)
@@ -42,7 +44,7 @@ jobs:
       - name: Run architecture bot (via OpenAI)
         id: bot
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ inputs.openai_api_key || secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-4.1
         run: bash scripts/run_architecture_bot.sh "${{ steps.paths.outputs.analysis_paths }}"
 
@@ -175,7 +177,7 @@ jobs:
 
       - name: Run architecture bot again (to regenerate)
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ inputs.openai_api_key || secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-4.1
         run: bash scripts/run_architecture_bot.sh ${{ env.ANALYSIS_PATHS }} docs/architecture
 
