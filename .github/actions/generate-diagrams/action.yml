@@ -27,11 +27,36 @@ runs:
         ref: ${{ inputs.head_ref }}
         fetch-depth: 0
 
-    - name: Run diagram review
+    - name: Run architecture bot
       shell: bash
       env:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
-        BASE_SHA: ${{ inputs.base_sha }}
-        REVIEWER_COMMENT: ${{ inputs.comment_body }}
-      run: bash ${{ github.action_path }}/review.sh
+      run: |
+        if [[ -d "docs/architecture" ]]; then
+          bash scripts/run_architecture_bot.sh src docs/architecture
+        else
+          bash scripts/run_architecture_bot.sh src
+        fi
+
+    - name: Check if diagrams changed
+      id: check
+      shell: bash
+      run: |
+        if git diff --quiet docs/architecture/; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit changes if needed
+      if: steps.check.outputs.changed == 'true'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add docs/architecture/
+        git commit -m "Update architecture diagrams"
+        git push https://x-access-token:${{ inputs.github_token }}@github.com/${{ github.repository }}.git HEAD:${{ inputs.head_ref }}
