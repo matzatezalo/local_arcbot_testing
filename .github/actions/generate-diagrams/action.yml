@@ -38,7 +38,7 @@ runs:
         if [[ -d "docs/architecture" ]]; then
           ANALYSIS_PATHS="src docs/architecture" bash scripts/run_architecture_bot.sh
         else
-          bash scripts/run_architecture_bot.sh
+          ANALYSIS_PATHS="src" bash scripts/run_architecture_bot.sh
         fi
 
     - name: Check if diagrams changed
