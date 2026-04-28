@@ -69,14 +69,19 @@ jobs:
 
             ${fileList}
 
-            ### How to Approve
+            ### How to Review or Approve
 
-            Reply to this comment with:
+            **Approve these changes:**
             \`\`\`
             /approve-diagrams
             \`\`\`
 
-            The diagrams will be merged into your pull request automatically.
+            **Request changes:**
+            \`\`\`
+            /review Your feedback here
+            \`\`\`
+
+            ---
 
             ---
             `;
@@ -147,4 +152,105 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `Architecture diagrams have been approved and updated!`
+            });
+
+  request-changes:
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/review')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Extract review feedback
+        id: feedback
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.comment.body;
+            const feedback = body.replace(/\/review\s*/i, '').trim();
+            core.setOutput('reason', feedback || 'Please adjust the diagrams to match your changes');
+
+      - name: Post review request comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Re-analyzing diagrams with your feedback...`
+            });
+
+      - name: Get PR info
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            core.setOutput('head_ref', pr.data.head.ref);
+            core.setOutput('base_sha', pr.data.base.sha);
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_ref }}
+          fetch-depth: 0
+
+      - name: Re-generate diagrams
+        uses: ./.github/actions/generate-diagrams
+        with:
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          head_ref: ${{ steps.pr.outputs.head_ref }}
+          base_sha: ${{ steps.pr.outputs.base_sha }}
+
+      - name: Download diagram diff
+        uses: actions/download-artifact@v4
+        with:
+          name: diagram-changes
+          path: /tmp
+
+      - name: Post updated diagram changes for review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const diff = fs.readFileSync('/tmp/diagram_changes.diff', 'utf8');
+            
+            // Extract file names from diff
+            const fileMatches = diff.match(/^diff --git a\/(.*?) b\/.*$/gm) || [];
+            const files = fileMatches.map(match => match.replace(/^diff --git a\/(.*?) b\/.*$/, '$1'));
+            const uniqueFiles = [...new Set(files)];
+            
+            const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
+            
+            const body = `## Updated Diagrams - Ready for Review
+
+            Diagrams have been re-analyzed with your feedback.
+
+            ### Files to be Updated
+
+            ${fileList}
+
+            ### How to Proceed
+
+            **Approve these changes:**
+            \`\`\`
+            /approve-diagrams
+            \`\`\`
+
+            **Request more changes:**
+            \`\`\`
+            /review Your feedback here
+            \`\`\`
+
+            ---`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
             });
