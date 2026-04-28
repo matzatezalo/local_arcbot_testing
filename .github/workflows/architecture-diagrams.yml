@@ -27,6 +27,8 @@ jobs:
             core.setOutput('head_ref', pr.data.head.ref);
             core.setOutput('base_sha', pr.data.base.sha);
 
+      - uses: actions/checkout@v4
+
       - uses: ./.github/actions/generate-diagrams
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
