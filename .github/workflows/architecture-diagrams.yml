@@ -8,7 +8,7 @@ on:
 
 env:
   # Specify which paths the bot should analyze (should match paths: trigger above with whitespaces between directories)
-  DIAGRAM_ANALYSIS_PATHS: 'src'
+  ANALYSIS_PATHS: 'src'
 
 jobs:
   detect-changes:
@@ -23,7 +23,7 @@ jobs:
       - name: Determine analysis paths (first-time vs. incremental)
         id: paths
         env:
-          PATHS: ${{ env.DIAGRAM_ANALYSIS_PATHS }}
+          PATHS: ${{ env.ANALYSIS_PATHS }}
         run: |
           if [[ -d "docs/architecture" ]]; then
             echo "analysis_paths=$PATHS docs/architecture" >> $GITHUB_OUTPUT
@@ -38,7 +38,6 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-4.1
-          DIAGRAM_ANALYSIS_PATHS: ${{ env.DIAGRAM_ANALYSIS_PATHS }}
         run: bash scripts/run_architecture_bot.sh ${{ steps.paths.outputs.analysis_paths }}
 
       - name: Check if diagrams changed
@@ -160,9 +159,9 @@ jobs:
 
       - name: Run architecture bot again (to regenerate)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DIAGRAM_ANALYSIS_PATHS: ${{ env.DIAGRAM_ANALYSIS_PATHS }}
-        run: bash scripts/run_architecture_bot.sh ${{ env.DIAGRAM_ANALYSIS_PATHS }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: gpt-4.1
+        run: bash scripts/run_architecture_bot.sh ${{ env.ANALYSIS_PATHS }} docs/architecture
 
       - name: Commit diagram updates
         run: |
