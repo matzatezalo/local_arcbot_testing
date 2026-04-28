@@ -42,7 +42,7 @@ runs:
       env:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         OPENAI_MODEL: gpt-4.1
-      run: bash ${{ github.action_path }}/../../scripts/run_architecture_bot.sh "${{ steps.paths.outputs.analysis_paths }}"
+      run: bash scripts/run_architecture_bot.sh "${{ steps.paths.outputs.analysis_paths }}"
 
     - name: Check if diagrams changed
       id: check
