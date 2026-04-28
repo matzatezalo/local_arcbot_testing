@@ -79,7 +79,6 @@ jobs:
             The diagrams will be merged into your pull request automatically.
 
             ---
-            ;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
