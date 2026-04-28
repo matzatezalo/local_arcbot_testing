@@ -1,12 +1,11 @@
 from dataclasses import dataclass, field
-from typing import List
 import uuid
 
 
 @dataclass
 class Order:
     customer_id: str
-    items: List[dict]
+    items: list[dict]
     order_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     status: str = "pending"
     total: float = 0.0

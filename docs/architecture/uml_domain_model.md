@@ -1,6 +1,6 @@
 # Architecture Model: Order Management Domain
 
-**Generated on:** April 28, 2026  
+**Generated on:** April 28, 2026
 **Source Scope:** `/src`
 
 ## Mermaid Diagram

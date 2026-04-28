@@ -205,15 +205,15 @@ print_success "Found $DIAGRAM_COUNT diagram(s)"
 for ((i=0; i<DIAGRAM_COUNT; i++)); do
     FILENAME=$(echo "$JSON_CONTENT" | jq -r ".diagrams[$i].filename")
     CONTENT=$(echo "$JSON_CONTENT" | jq -r ".diagrams[$i].content")
-    
+
     if [[ -z "$FILENAME" ]] || [[ -z "$CONTENT" ]] || [[ "$FILENAME" == "null" ]] || [[ "$CONTENT" == "null" ]]; then
         print_warning "Invalid diagram entry at index $i, skipping"
         continue
     fi
-    
+
     # Create parent directory
     mkdir -p "$(dirname "$FILENAME")"
-    
+
     # Write file
     echo "$CONTENT" > "$FILENAME"
     print_success "Generated: $FILENAME"

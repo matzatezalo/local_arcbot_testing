@@ -1,7 +1,6 @@
 from .models import Order, Payment, Refund
-from .payment_service import PaymentService
 from .order_repository import OrderRepository
-from typing import List
+from .payment_service import PaymentService
 
 
 class ApiGateway:
@@ -10,7 +9,7 @@ class ApiGateway:
         self.payment_service = PaymentService()
         self.order_repository = OrderRepository()
 
-    def create_order(self, customer_id: str, items: List[dict]) -> Order:
+    def create_order(self, customer_id: str, items: list[dict]) -> Order:
         order = Order(customer_id=customer_id, items=items)
         return self.order_repository.save(order)
 

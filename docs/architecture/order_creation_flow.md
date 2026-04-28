@@ -1,6 +1,6 @@
 # Architecture Flow: Order Creation
 
-**Generated on:** April 28, 2026  
+**Generated on:** April 28, 2026
 **Source Scope:** `/src/api_gateway.py`, `/src/models.py`, `/src/order_repository.py`
 
 ## Mermaid Diagram

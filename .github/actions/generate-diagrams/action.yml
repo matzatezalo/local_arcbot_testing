@@ -14,6 +14,10 @@ inputs:
   base_sha:
     description: Base commit SHA
     required: true
+  comment_body:
+    description: Comment that triggered the action (if any)
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -23,42 +27,11 @@ runs:
         ref: ${{ inputs.head_ref }}
         fetch-depth: 0
 
-    - name: Determine analysis paths (first-time vs. incremental)
-      id: paths
-      shell: bash
-      env:
-        ANALYSIS_PATHS: 'src'
-      run: |
-        if [[ -d "docs/architecture" ]]; then
-          echo "analysis_paths=$ANALYSIS_PATHS docs/architecture" >> $GITHUB_OUTPUT
-          echo "Mode: Incremental update (docs/architecture/ exists)"
-        else
-          echo "analysis_paths=$ANALYSIS_PATHS" >> $GITHUB_OUTPUT
-          echo "Mode: First-time generation (docs/architecture/ missing)"
-        fi
-
-    - name: Run architecture bot (via OpenAI)
+    - name: Run diagram review
       shell: bash
       env:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
-        OPENAI_MODEL: gpt-4.1
-      run: bash scripts/run_architecture_bot.sh "${{ steps.paths.outputs.analysis_paths }}"
-
-    - name: Check if diagrams changed
-      id: check
-      shell: bash
-      run: |
-        if git diff --quiet docs/architecture/; then
-          echo "changed=false" >> $GITHUB_OUTPUT
-        else
-          echo "changed=true" >> $GITHUB_OUTPUT
-          git diff docs/architecture/ > diagram_changes.diff
-        fi
-
-    - name: Upload diagram diff
-      if: steps.check.outputs.changed == 'true'
-      uses: actions/upload-artifact@v4
-      with:
-        name: diagram-changes
-        path: diagram_changes.diff
-
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        BASE_SHA: ${{ inputs.base_sha }}
+        REVIEWER_COMMENT: ${{ inputs.comment_body }}
+      run: bash ${{ github.action_path }}/review.sh

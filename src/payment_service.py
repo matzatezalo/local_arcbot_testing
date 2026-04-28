@@ -1,11 +1,10 @@
-from typing import Dict, Optional
 from .models import Order, Payment
 
 
 class PaymentService:
     def __init__(self, provider: str = "stripe") -> None:
         self.provider = provider
-        self._payments: Dict[str, Payment] = {}
+        self._payments: dict[str, Payment] = {}
 
     def charge(self, order: Order, amount: float) -> Payment:
         # Stub: in production this would call the payment provider API
@@ -27,5 +26,5 @@ class PaymentService:
             return True
         return False
 
-    def get_payment(self, payment_id: str) -> Optional[Payment]:
+    def get_payment(self, payment_id: str) -> Payment | None:
         return self._payments.get(payment_id)

@@ -1,17 +1,16 @@
-from typing import Dict, Optional
 from .models import Order
 
 
 class OrderRepository:
     def __init__(self) -> None:
-        self._orders: Dict[str, Order] = {}
+        self._orders: dict[str, Order] = {}
 
     def save(self, order: Order) -> Order:
         order.calculate_total()
         self._orders[order.order_id] = order
         return order
 
-    def find_by_id(self, order_id: str) -> Optional[Order]:
+    def find_by_id(self, order_id: str) -> Order | None:
         return self._orders.get(order_id)
 
     def delete(self, order_id: str) -> bool:

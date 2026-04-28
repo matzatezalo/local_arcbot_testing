@@ -118,15 +118,15 @@ DIAGRAM_COUNT=0
 while IFS= read -r diagram; do
     FILENAME=$(echo "$diagram" | jq -r '.filename')
     CONTENT=$(echo "$diagram" | jq -r '.content')
-    
+
     if [[ -z "$FILENAME" ]] || [[ -z "$CONTENT" ]] || [[ "$FILENAME" == "null" ]] || [[ "$CONTENT" == "null" ]]; then
         print_warning "Invalid diagram entry, skipping"
         continue
     fi
-    
+
     # Create parent directory
     mkdir -p "$(dirname "$FILENAME")"
-    
+
     # Write file (using printf to properly handle escaped newlines)
     printf "%b" "$CONTENT" > "$FILENAME"
     print_success "Generated: $FILENAME"
