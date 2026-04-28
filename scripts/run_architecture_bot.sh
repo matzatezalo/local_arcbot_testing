@@ -98,8 +98,6 @@ fi
 CONTEXT_SIZE=${#CODEBASE_CONTEXT}
 print_success "Collected $FILE_COUNT files (${CONTEXT_SIZE} characters of code)"
 
-# Call Claude via GitHub Models
-
 print_step "Calling OpenAI API..."
 
 if [[ -z "${OPENAI_API_KEY:-}" ]]; then
@@ -109,7 +107,17 @@ fi
 
 # Build the prompt
 read -r -d '' PROMPT << 'PROMPT_END' || true
-You are an expert software architect. Generate/update architecture diagrams according to the codebase.
+You are an expert software architect specializing in architecture diagram generation using Mermaid.js.
+
+Follow the rules and instructions from SKILL.md generate architecture diagrams for the provided codebase.
+
+## Architecture Generation Rules:
+%SKILL%
+
+## Codebase to Analyze:
+%CODEBASE%
+
+Generate the diagrams according to the rules above and return the JSON output as specified.
 PROMPT_END
 
 # Replace placeholders
@@ -169,9 +177,9 @@ fi
 
 # Validate JSON
 if ! echo "$JSON_CONTENT" | jq empty 2>/dev/null; then
-    print_error "Could not parse Claude response as JSON"
+    print_error "Could not parse OpenAI response as JSON"
     echo "Response was:"
-    echo "$CLAUDE_RESPONSE"
+    echo "$OPENAI_RESPONSE"
     exit 1
 fi
 
