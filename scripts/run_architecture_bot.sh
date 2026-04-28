@@ -144,7 +144,7 @@ PROMPT="${PROMPT//%CODEBASE%/$CODEBASE_CONTEXT}"
 
 
 # Set OpenAI model (default: gpt-4.1)
-OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1}"
+OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
 
 # Create the request JSON
 REQUEST_JSON=$(jq -n \
