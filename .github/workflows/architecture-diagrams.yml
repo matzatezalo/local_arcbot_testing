@@ -21,7 +21,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: ./.github/actions/generate-diagrams/action.yml
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/generate-diagrams
         with:
           openai_api_key: ${{ inputs.openai_api_key || secrets.OPENAI_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
