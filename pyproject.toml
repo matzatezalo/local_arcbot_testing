@@ -1,0 +1,114 @@
+[project]
+name = "architecture-bot"
+version = "0.1.0"
+description = "The goal is to establish a reliable way for LLMs to both produce and consume architecture schematics that accurately represent a codebase."
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.88.0",
+    "asyncpg>=0.31.0",
+    "mcp>=1.26.0",
+    "python-dotenv>=1.0",
+    "sqlalchemy[asyncio]>=2.0",
+]
+
+# Development dependency groups (modern uv approach)
+[dependency-groups]
+dev = [
+    "ruff>=0.1.0",
+    "pre-commit>=3.0.0",
+    "pyright>=1.1.350",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-mock>=3.0",
+]
+
+[build-system]
+requires = ["setuptools>=73.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Tell setuptools where to find packages
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+# Ruff configuration
+[tool.ruff]
+target-version = "py311"
+line-length = 170
+
+[tool.ruff.lint]
+select = [
+    # Code quality
+    "E",    # pycodestyle errors
+    "F401", # unused imports
+
+    # Code style
+    "I",    # isort
+    "N",    # PEP8 naming conventions
+
+    # Static analysis
+    "ARG",  # flake8-unused-arguments
+
+    # Type checking
+    "ANN",  # type annotations
+
+    # Modern Python
+    "UP",   # pyupgrade, updates code to latest Python version
+    "RUF",  # ruff-specific rules
+    "PT",   # pytest style
+    "ICN",  # import-cost
+]
+ignore = [
+    "D401",  # imperative mood
+    "D100",  # missing docstring in public module
+    "D104",  # missing docstring in private module
+    "D203",  # 1 blank line required before class docstring (conflicts with D211)
+    "D213",  # Multi-line docstring summary should start at the second line (conflicts with D212)
+    "E501",  # line too long (handled by line-length)
+    "N817",  #
+    "ANN002",  # missing type annotation for *args
+    "ANN003",  # missing type annotation for **kwargs
+    "RUF005",   # Checks for uses of the + operator to concatenate collections
+    "RUF012",   # Checks for mutable default values in class attributes.
+    "RUF013",   # Checks for the use of implicit Optional in type annotations when the default parameter value is None.
+]
+exclude = [
+    "src/infra/migrations/**"
+]
+
+# Auto-fix settings
+fixable = ["ALL"]
+unfixable = []
+
+# Import organization
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+split-on-trailing-comma = true
+
+[tool.ruff.format]
+
+# Pyright/Pylance configuration
+[tool.pyright]
+include = ["src"]
+exclude = ["**/node_modules", "**/__pycache__"]
+pythonVersion = "3.11"
+pythonPlatform = "All"
+# Type checking mode
+typeCheckingMode = "basic"  # "off", "basic", or "strict"
+# Enable/disable specific checks
+reportMissingImports = true # Warns when you import something that doesn't exist
+reportMissingTypeStubs = false # Doesn't complain about third-party libraries without type hints (like some of your langchain dependencies)
+reportUnusedImport = true # Warns when you import something that isn't used
+reportUnusedClass = "warning" # Warns when you define a class that isn't used
+reportUnusedFunction = "warning" # Warns when you define a function that isn't used
+reportUnusedVariable = "warning" # Warns when you define a variable that isn't used
+reportDuplicateImport = "warning" # Warns when you import the same thing multiple times
+# Ignore certain paths for type checking
+ignore = [
+    "**/tests/**",
+    "**/test_*.py"
+]
