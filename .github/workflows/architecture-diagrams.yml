@@ -54,15 +54,20 @@ jobs:
             const fs = require('fs');
             const diff = fs.readFileSync('/tmp/diagram_changes.diff', 'utf8');
             
+            // Extract file names from diff
+            const fileMatches = diff.match(/^diff --git a\/(.*?) b\/.*$/gm) || [];
+            const files = fileMatches.map(match => match.replace(/^diff --git a\/(.*?) b\/.*$/, '$1'));
+            const uniqueFiles = [...new Set(files)];
+            
+            const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
+            
             const body = `## 📐 Architecture Diagrams Changed
 
             Proposed changes have been detected in your architecture diagrams.
 
-            ### 📋 Change Preview
+            ### 📁 Files to be Updated
 
-            \`\`\`diff
-            ${diff}
-            \`\`\`
+            ${fileList}
 
             ### ✅ How to Approve
 
