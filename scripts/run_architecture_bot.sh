@@ -96,6 +96,11 @@ done
 
 if [[ -z "$CODEBASE_CONTEXT" ]]; then
     print_error "No codebase context found"
+    echo "Debug: FILE_COUNT=$FILE_COUNT" >&2
+    echo "Debug: PATHS=${PATHS[@]}" >&2
+    for p in "${PATHS[@]}"; do
+        echo "Debug: Path exists? $p = $(test -e "$p" && echo "yes" || echo "no")" >&2
+    done
     exit 1
 fi
 
@@ -146,11 +151,11 @@ PROMPT_END
 PROMPT="${PROMPT//%SKILL%/$SKILL}"
 PROMPT="${PROMPT//%CODEBASE%/$CODEBASE_CONTEXT}"
 
-
 # Set OpenAI model (default: gpt-4.1)
 OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
 
 # Create the request JSON
+print_step "Building OpenAI request..."
 REQUEST_JSON=$(jq -n \
     --arg model "$OPENAI_MODEL" \
     --argjson max_tokens 8000 \
@@ -164,25 +169,42 @@ REQUEST_JSON=$(jq -n \
                 content: $content
             }
         ]
-    }')
+    }' 2>&1) || {
+    print_error "Failed to build request JSON with jq"
+    echo "Error: $REQUEST_JSON" >&2
+    exit 1
+}
 
 # Call OpenAI API
+print_step "Sending request to OpenAI API..."
 RESPONSE=$(curl -s -X POST \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $OPENAI_API_KEY" \
     -d "$REQUEST_JSON" \
-    "https://api.openai.com/v1/chat/completions")
+    "https://api.openai.com/v1/chat/completions" 2>&1)
 
 
 # Check for API errors
 if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
     ERROR_MSG=$(echo "$RESPONSE" | jq -r '.error.message // .error')
     print_error "OpenAI API error: $ERROR_MSG"
+    echo "Full response:" >&2
+    echo "$RESPONSE" >&2
     exit 1
 fi
 
 # Extract the response content
-OPENAI_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
+OPENAI_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content' 2>&1) || {
+    print_error "Failed to extract response from OpenAI"
+    echo "Response: $RESPONSE" >&2
+    exit 1
+}
+
+if [[ -z "$OPENAI_RESPONSE" ]] || [[ "$OPENAI_RESPONSE" == "null" ]]; then
+    print_error "OpenAI returned empty or null response"
+    echo "Response: $RESPONSE" >&2
+    exit 1
+fi
 
 # Parse and write diagrams
 print_step "Writing diagrams to disk..."
