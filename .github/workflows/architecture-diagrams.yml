@@ -8,7 +8,7 @@ on:
 
 env:
   # Specify which paths the bot should analyze (should match paths: trigger above with whitespaces between directories)
-  ANALYSIS_PATHS: 'src docs/architecture'
+  ANALYSIS_PATHS: 'src'
 
 jobs:
   detect-changes:
