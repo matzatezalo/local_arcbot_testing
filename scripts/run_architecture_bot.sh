@@ -82,13 +82,16 @@ for path_pattern in "${PATHS[@]}"; do
     elif [[ -d "$path_pattern" ]]; then
         echo "   Directory found, scanning files..." >&2
         # Directory - find all files
+        # Temporarily disable pipefail to handle find command gracefully
+        set +o pipefail
         while IFS= read -r source_file; do
             if [[ ! "$source_file" =~ __pycache__ ]] && [[ ! "$source_file" =~ \.git ]]; then
                 CONTENT=$(cat "$source_file" 2>/dev/null || true)
                 CODEBASE_CONTEXT+=$'\n\n'"# File: $source_file"$'\n'"'"'```'"'"$'\n'"$CONTENT"$'\n'"'"'```'"'"
-                ((FILE_COUNT++))
+                ((FILE_COUNT++)) || true
             fi
-        done < <(find "$path_pattern" -type f 2>/dev/null)
+        done < <(find "$path_pattern" -type f 2>/dev/null || true)
+        set -o pipefail
     else
         print_warning "Path not found: $path_pattern"
     fi
