@@ -107,17 +107,35 @@ fi
 
 # Build the prompt
 read -r -d '' PROMPT << 'PROMPT_END' || true
-You are an expert software architect specializing in architecture diagram generation using Mermaid.js.
+You are an expert software architect. Your ONLY task is to generate architecture diagrams in Mermaid.js format.
 
-Follow the rules and instructions from SKILL.md generate architecture diagrams for the provided codebase.
-
-## Architecture Generation Rules:
+You MUST follow these rules EXACTLY from SKILL.md:
 %SKILL%
 
-## Codebase to Analyze:
+Analyze this codebase:
 %CODEBASE%
 
-Generate the diagrams according to the rules above and return the JSON output as specified.
+Generate the diagrams and return ONLY this JSON structure. DO NOT return analysis, warnings, or metadata. ONLY return the diagrams in this exact format:
+
+{
+  "diagrams": [
+    {
+      "filename": "docs/architecture/uml_domain_model.md",
+      "content": "# Architecture Model: Domain\n\n**Generated on:** April 28, 2026\n\n**Source Scope:** `src`\n\n## Mermaid Diagram\n\n```mermaid\nclassDiagram\n[FULL MERMAID DIAGRAM WITH ALL ENTITIES, ATTRIBUTES, METHODS, AND RELATIONSHIPS]\n```\n\n## Entity Dictionary\n\n* **Entity1:** Description\n* **Entity2:** Description"
+    },
+    {
+      "filename": "docs/architecture/flow_name.md",
+      "content": "# Architecture Flow: [Process Name]\n\n**Generated on:** April 28, 2026\n\n**Source Scope:** `src`\n\n## Mermaid Diagram\n\n```mermaid\nflowchart TD\n[FULL MERMAID FLOW DIAGRAM]\n```\n\n## Flow Description\n\n[Detailed description of the flow]"
+    }
+  ]
+}
+
+CRITICAL REQUIREMENTS:
+- Return ONLY valid JSON with no additional text
+- No markdown code block wrappers (no ```json tags)
+- No explanations, analysis, or warnings
+- Each diagram MUST have filename and content fields
+- Content must include complete Mermaid diagrams, not placeholders
 PROMPT_END
 
 # Replace placeholders
@@ -166,33 +184,30 @@ OPENAI_RESPONSE=$(echo "$RESPONSE" | jq -r '.choices[0].message.content')
 print_step "Writing diagrams to disk..."
 
 
-# Extract JSON from the response
-if echo "$OPENAI_RESPONSE" | grep -q '```json'; then
-    JSON_CONTENT=$(echo "$OPENAI_RESPONSE" | sed -n '/```json/,/```/p' | sed '1d;$d')
-elif echo "$OPENAI_RESPONSE" | grep -q '```'; then
-    JSON_CONTENT=$(echo "$OPENAI_RESPONSE" | sed -n '/```/,/```/p' | sed '1d;$d')
-else
-    JSON_CONTENT="$OPENAI_RESPONSE"
-fi
+# Extract JSON from the response (assume raw JSON, no code blocks)
+JSON_CONTENT="$OPENAI_RESPONSE"
 
-# Validate JSON
-if ! echo "$JSON_CONTENT" | jq empty 2>/dev/null; then
-    print_error "Could not parse OpenAI response as JSON"
-    echo "Response was:"
-    echo "$OPENAI_RESPONSE"
+# Validate JSON is parseable
+if ! echo "$JSON_CONTENT" | jq -e '.diagrams' >/dev/null 2>&1; then
+    print_error "Could not parse OpenAI response or no diagrams field found"
+    echo "Response preview:" >&2
+    echo "$OPENAI_RESPONSE" | head -c 1000 >&2
     exit 1
 fi
 
 # Extract and write each diagram
-DIAGRAMS=$(echo "$JSON_CONTENT" | jq -c '.diagrams[]')
 DIAGRAM_COUNT=0
 
-while IFS= read -r diagram; do
-    FILENAME=$(echo "$diagram" | jq -r '.filename')
-    CONTENT=$(echo "$diagram" | jq -r '.content')
+# Get each diagram object one at a time
+DIAGRAM_COUNT=$(echo "$JSON_CONTENT" | jq '.diagrams | length')
+print_success "Found $DIAGRAM_COUNT diagram(s)"
+
+for ((i=0; i<DIAGRAM_COUNT; i++)); do
+    FILENAME=$(echo "$JSON_CONTENT" | jq -r ".diagrams[$i].filename")
+    CONTENT=$(echo "$JSON_CONTENT" | jq -r ".diagrams[$i].content")
     
     if [[ -z "$FILENAME" ]] || [[ -z "$CONTENT" ]] || [[ "$FILENAME" == "null" ]] || [[ "$CONTENT" == "null" ]]; then
-        print_warning "Invalid diagram entry, skipping"
+        print_warning "Invalid diagram entry at index $i, skipping"
         continue
     fi
     
@@ -202,8 +217,7 @@ while IFS= read -r diagram; do
     # Write file
     echo "$CONTENT" > "$FILENAME"
     print_success "Generated: $FILENAME"
-    ((DIAGRAM_COUNT++))
-done <<< "$DIAGRAMS"
+done
 
 echo ""
 print_success "Done! Generated $DIAGRAM_COUNT diagrams"
