@@ -73,14 +73,12 @@ CODEBASE_CONTEXT=""
 FILE_COUNT=0
 
 for path_pattern in "${PATHS[@]}"; do
-    echo "   Checking path: $path_pattern" >&2
     if [[ -f "$path_pattern" ]]; then
         # Single file - include all files
         CONTENT=$(cat "$path_pattern" 2>/dev/null || true)
         CODEBASE_CONTEXT+=$'\n\n'"# File: $path_pattern"$'\n'"'"'```'"'"$'\n'"$CONTENT"$'\n'"'"'```'"'"
         ((FILE_COUNT++))
     elif [[ -d "$path_pattern" ]]; then
-        echo "   Directory found, scanning files..." >&2
         # Directory - find all files
         # Temporarily disable pipefail to handle find command gracefully
         set +o pipefail
@@ -92,18 +90,11 @@ for path_pattern in "${PATHS[@]}"; do
             fi
         done < <(find "$path_pattern" -type f 2>/dev/null || true)
         set -o pipefail
-    else
-        print_warning "Path not found: $path_pattern"
     fi
 done
 
 if [[ -z "$CODEBASE_CONTEXT" ]]; then
     print_error "No codebase context found"
-    echo "Debug: FILE_COUNT=$FILE_COUNT" >&2
-    echo "Debug: PATHS=${PATHS[@]}" >&2
-    for p in "${PATHS[@]}"; do
-        echo "Debug: Path exists? $p = $(test -e "$p" && echo "yes" || echo "no")" >&2
-    done
     exit 1
 fi
 
@@ -158,7 +149,6 @@ PROMPT="${PROMPT//%CODEBASE%/$CODEBASE_CONTEXT}"
 OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
 
 # Create the request JSON
-print_step "Building OpenAI request..."
 REQUEST_JSON=$(jq -n \
     --arg model "$OPENAI_MODEL" \
     --argjson max_tokens 8000 \
@@ -179,7 +169,6 @@ REQUEST_JSON=$(jq -n \
 }
 
 # Call OpenAI API
-print_step "Sending request to OpenAI API..."
 RESPONSE=$(curl -s -X POST \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $OPENAI_API_KEY" \
