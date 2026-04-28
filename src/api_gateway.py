@@ -1,4 +1,4 @@
-from .models import Order, Payment
+from .models import Order, Payment, Refund
 from .payment_service import PaymentService
 from .order_repository import OrderRepository
 from typing import List
@@ -25,3 +25,11 @@ class ApiGateway:
         if order is None:
             raise ValueError(f"Order {order_id} not found")
         return order
+
+    def process_refund(self, payment_id: str, reason: str = "") -> Refund:
+        refund = Refund(payment_id=payment_id, amount=0.0, reason=reason)
+        refund.approve()
+        success = self.payment_service.refund(payment_id)
+        if success:
+            refund.complete()
+        return refund

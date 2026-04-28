@@ -39,3 +39,18 @@ class Payment:
 
     def is_successful(self) -> bool:
         return self.status == "completed"
+
+
+@dataclass
+class Refund:
+    payment_id: str
+    amount: float
+    reason: str
+    refund_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    status: str = "pending"
+
+    def approve(self) -> None:
+        self.status = "approved"
+
+    def complete(self) -> None:
+        self.status = "completed"
