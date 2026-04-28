@@ -32,11 +32,13 @@ runs:
       env:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
+
+        ANALYSIS_PATHS: src
       run: |
         if [[ -d "docs/architecture" ]]; then
-          bash scripts/run_architecture_bot.sh src docs/architecture
+          ANALYSIS_PATHS="src docs/architecture" bash scripts/run_architecture_bot.sh
         else
-          bash scripts/run_architecture_bot.sh src
+          bash scripts/run_architecture_bot.sh
         fi
 
     - name: Check if diagrams changed
