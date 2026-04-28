@@ -6,16 +6,17 @@ on:
     types: [created]
 
 jobs:
-  review:
-    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/diagram-review'))
+  detect-changes:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: read
+      contents: read
+      pull-requests: write
+    outputs:
+      diagrams-changed: ${{ steps.generate.outputs.changed }}
     steps:
-      - name: Get PR branch for comment trigger
-        if: github.event_name == 'issue_comment'
-        id: get_branch
+      - name: Get PR info
+        id: pr
         uses: actions/github-script@v7
         with:
           script: |
@@ -29,10 +30,94 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/generate-diagrams
+      - name: Generate and detect diagram changes
+        id: generate
+        uses: ./.github/actions/generate-diagrams
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          head_ref: ${{ github.event_name == 'issue_comment' && steps.get_branch.outputs.head_ref || github.head_ref }}
-          base_sha: ${{ github.event_name == 'issue_comment' && steps.get_branch.outputs.base_sha || github.event.pull_request.base.sha }}
-          comment_body: ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
+          head_ref: ${{ steps.pr.outputs.head_ref }}
+          base_sha: ${{ steps.pr.outputs.base_sha }}
+
+      - name: Download diagram diff
+        if: steps.generate.outputs.changed == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: diagram-changes
+          path: /tmp
+
+      - name: Post diagram changes for review
+        if: steps.generate.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const diff = fs.readFileSync('/tmp/diagram_changes.diff', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Architecture Diagrams Changed\n\nPlease review the proposed changes below. React with ✅ to approve and auto-commit.\n\n\`\`\`diff\n${diff}\n\`\`\``
+            });
+
+  approve-and-commit:
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '✅') && github.event.action == 'created'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Get PR info
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            core.setOutput('head_ref', pr.data.head.ref);
+            core.setOutput('base_sha', pr.data.base.sha);
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_ref }}
+          fetch-depth: 0
+
+      - name: Re-generate diagrams (accounting for new commits)
+        uses: ./.github/actions/generate-diagrams
+        with:
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          head_ref: ${{ steps.pr.outputs.head_ref }}
+          base_sha: ${{ steps.pr.outputs.base_sha }}
+
+      - name: Commit diagram updates
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! git diff --quiet docs/architecture/; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/architecture/
+            git commit -m "Update architecture diagrams (approved)"
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ steps.pr.outputs.head_ref }}
+            
+            echo "Diagrams committed and pushed"
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Post approval comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Architecture diagrams have been approved and updated!`
+            });

@@ -48,16 +48,13 @@ runs:
           echo "changed=false" >> $GITHUB_OUTPUT
         else
           echo "changed=true" >> $GITHUB_OUTPUT
+          git diff docs/architecture/ > diagram_changes.diff
         fi
 
-    - name: Commit changes if needed
+    - name: Upload diagram diff
       if: steps.check.outputs.changed == 'true'
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-      run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git add docs/architecture/
-        git commit -m "Update architecture diagrams"
-        git push https://x-access-token:${{ inputs.github_token }}@github.com/${{ github.repository }}.git HEAD:${{ inputs.head_ref }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: diagram-changes
+        path: diagram_changes.diff
+        retention-days: 1
