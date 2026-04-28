@@ -1,29 +1,25 @@
 # Architecture Flow: Order Creation
 
 **Generated on:** April 28, 2026
-**Source Scope:** `/src/api_gateway.py`, `/src/models.py`, `/src/order_repository.py`
+
+**Source Scope:** `src`
 
 ## Mermaid Diagram
 
 ```mermaid
 flowchart TD
-    Start([Start: create_order]) --> CreateOrder[Create Order with customer_id and items]
-    CreateOrder --> SaveOrder[(Save Order to Repository)]
-    SaveOrder --> CalcTotal[Calculate Order Total]
-    CalcTotal --> SetStatus[Set Order Status to pending]
+    Start([Start: create_order]) --> NewOrder[Instantiate Order (customerId, items)]
+    NewOrder --> SaveOrder[(Persist Order via Repository)]
+    SaveOrder --> CalcTotal[Calculate Total]
+    CalcTotal --> SetStatus[Set Status 'pending']
     SetStatus --> Return([Return Order])
 ```
 
-## Process Dictionary
+## Flow Description
 
-* **Start: create_order:** Entry point when API client requests a new order with customer identifier and line items.
-
-* **Create Order with customer_id and items:** Instantiate new Order domain entity with provided parameters. Auto-generate unique orderId and initialize status as 'pending'.
-
-* **Save Order to Repository:** Persist Order instance to in-memory repository storage via `OrderRepository.save()`.
-
-* **Calculate Order Total:** Invoke `Order.calculateTotal()` to compute sum of all line items. Total = Σ(item.price × item.qty).
-
-* **Set Order Status to pending:** Confirm Order status remains 'pending' until payment is processed.
-
-* **Return Order:** Send Order instance back to client with all computed fields populated.
+* **Start: create_order:** Entry point for creating a new order.
+* **Instantiate Order (customerId, items):** Creates an Order entity with provided customer and items.
+* **Persist Order via Repository:** Saves the Order in persistent storage.
+* **Calculate Total:** Computes total price for the order by accumulating item prices.
+* **Set Status 'pending':** Marks order as pending awaiting payment.
+* **Return Order:** Returns the created order entity to the client.
