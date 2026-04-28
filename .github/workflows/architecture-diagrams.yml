@@ -1,0 +1,172 @@
+name: Generate/Update Architecture Diagrams
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'docs/architecture/**' 
+
+env:
+  # Specify which paths the bot should analyze (should match paths: trigger above with whitespaces between directories)
+  DIAGRAM_ANALYSIS_PATHS: 'src docs/architecture'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      diagrams-changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git diff
+
+      - name: Run architecture bot (via OpenAI)
+        id: bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: gpt-4.1
+          DIAGRAM_ANALYSIS_PATHS: ${{ env.DIAGRAM_ANALYSIS_PATHS }}
+        run: bash scripts/run_architecture_bot.sh ${{ env.DIAGRAM_ANALYSIS_PATHS }}
+
+      - name: Check if diagrams changed
+        id: check
+        run: |
+          if git diff --quiet docs/architecture/; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            git diff docs/architecture/ > diagram_changes.diff
+          fi
+
+      - name: Upload diagram diff
+        if: steps.check.outputs.changed == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: diagram-changes
+          path: diagram_changes.diff
+
+  post-review-comment:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.diagrams-changed == 'true'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: diagram-changes
+
+      - name: Post diagram changes for review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const diff = fs.readFileSync('diagram_changes.diff', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Architecture Diagrams Updated\n\n` +
+                    `The bot detected code changes and has proposed diagram updates.\n\n` +
+                    `**Please review the changes below:**\n\n` +
+                    `\`\`\`diff\n${diff}\n\`\`\`\n\n` +
+                    `**To approve these changes:**\n` +
+                    `React with :white_check_mark: to this comment, or reply with "approved"\n\n` +
+                    `**To request modifications:**\n` +
+                    `Comment on this PR and the reviewers will iterate.`
+            });
+
+      - name: Set status to pending
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'diagram-review',
+              head_sha: context.sha,
+              status: 'in_progress',
+              conclusion: 'required'
+            });
+
+  wait-for-approval:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, post-review-comment]
+    if: needs.detect-changes.outputs.diagrams-changed == 'true'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            // Poll for approval reaction on the comment
+            let approved = false;
+            let iterations = 0;
+            const maxIterations = 180;  // Check every 1 min for 3 hours
+            
+            while (!approved && iterations < maxIterations) {
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              
+              // Find the bot's review comment
+              const reviewComment = comments.data.find(c => 
+                c.body.includes('Architecture Diagrams Updated')
+              );
+              
+              if (reviewComment) {
+                const reactions = await github.rest.reactions.listForIssueComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: reviewComment.id,
+                });
+                
+                // Check for approval reaction (white_check_mark)
+                if (reactions.data.find(r => r.content === '+1' || r.content === 'white_check_mark')) {
+                  approved = true;
+                  break;
+                }
+              }
+              
+              iterations++;
+              await new Promise(r => setTimeout(r, 60000));  // Wait 1 minute
+            }
+            
+            if (!approved) {
+              throw new Error('Diagram review approval not received within timeout');
+            }
+
+  commit-diagrams:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, wait-for-approval]
+    if: needs.detect-changes.outputs.diagrams-changed == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Run architecture bot again (to regenerate)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DIAGRAM_ANALYSIS_PATHS: ${{ env.DIAGRAM_ANALYSIS_PATHS }}
+        run: bash scripts/run_architecture_bot.sh ${{ env.DIAGRAM_ANALYSIS_PATHS }}
+
+      - name: Commit diagram updates
+        run: |
+          git config user.name "architecture-bot"
+          git config user.email "bot@example.com"
+          git add docs/architecture/
+          git commit -m "docs: Update architecture diagrams [skip ci]"
+          git push
+
+      - name: Update check status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: context.runId,
+              status: 'completed',
+              conclusion: 'success'
+            });
