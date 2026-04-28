@@ -36,7 +36,7 @@ jobs:
       - name: Run architecture bot (via OpenAI)
         id: bot
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ inputs.OPENAI_API_KEY }}
           OPENAI_MODEL: gpt-4.1
         run: bash scripts/run_architecture_bot.sh "${{ steps.paths.outputs.analysis_paths }}"
 
