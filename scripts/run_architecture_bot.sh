@@ -48,12 +48,23 @@ print_success "SKILL.md loaded ($(wc -c < "$SKILL_PATH") bytes)"
 # Collect codebase context
 print_step "Collecting codebase context..."
 
-# Get paths from command-line args, env var, or default
+# Get paths from command-line args or ANALYSIS_PATHS env var (required)
 if [[ $# -gt 0 ]]; then
     IFS=' ' read -ra PATHS <<< "$@"
-else
-    ANALYSIS_PATHS="${ANALYSIS_PATHS:-src_aipe}"
+elif [[ -n "${ANALYSIS_PATHS:-}" ]]; then
     IFS=' ' read -ra PATHS <<< "$ANALYSIS_PATHS"
+else
+    print_error "No analysis paths provided"
+    echo "Usage:" >&2
+    echo "  bash scripts/run_architecture_bot.sh <path1> [path2] ..." >&2
+    echo "OR" >&2
+    echo "  ANALYSIS_PATHS='<path1> [path2] ...' bash scripts/run_architecture_bot.sh" >&2
+    echo "" >&2
+    echo "Examples:" >&2
+    echo "  bash scripts/run_architecture_bot.sh src" >&2
+    echo "  bash scripts/run_architecture_bot.sh src docs/architecture" >&2
+    echo "  ANALYSIS_PATHS='src' bash scripts/run_architecture_bot.sh" >&2
+    exit 1
 fi
 
 echo "   Analyzing paths: ${PATHS[*]}"

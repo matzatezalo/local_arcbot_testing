@@ -22,12 +22,14 @@ jobs:
 
       - name: Determine analysis paths (first-time vs. incremental)
         id: paths
+        env:
+          PATHS: ${{ env.DIAGRAM_ANALYSIS_PATHS }}
         run: |
           if [[ -d "docs/architecture" ]]; then
-            echo "analysis_paths=src docs/architecture" >> $GITHUB_OUTPUT
+            echo "analysis_paths=$PATHS docs/architecture" >> $GITHUB_OUTPUT
             echo "Mode: Incremental update (docs/architecture/ exists)"
           else
-            echo "analysis_paths=src" >> $GITHUB_OUTPUT
+            echo "analysis_paths=$PATHS" >> $GITHUB_OUTPUT
             echo "Mode: First-time generation (docs/architecture/ missing)"
           fi
 
