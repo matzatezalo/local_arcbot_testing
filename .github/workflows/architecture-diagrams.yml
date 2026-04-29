@@ -61,7 +61,7 @@ jobs:
             
             const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
             
-            const body = `## Architecture Diagrams - Proposed Changes Detected
+            const mainContent = `## Architecture Diagrams - Proposed Changes Detected
 
             Proposed changes have been detected in your architecture diagrams.
 
@@ -78,9 +78,9 @@ jobs:
             ${diff}
             \`\`\`
 
-            </details>
+            </details>`;
 
-            ### How to Review or Approve
+            const instructions = `### How to Review or Approve
 
             **Approve these changes:**
             \`\`\`
@@ -90,10 +90,9 @@ jobs:
             **Request changes:**
             \`\`\`
             /review Your feedback here
-            \`\`\`
+            \`\`\``;
 
-            ---
-            `;
+            const body = mainContent + '\n\n' + instructions;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -237,7 +236,7 @@ jobs:
             
             const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
             
-            const body = `## Updated Diagrams - Response to Your Feedback
+            const mainContent = `## 📋 Updated Diagrams - Response to Your Feedback
 
             Diagrams have been re-analyzed based on your input.
 
@@ -254,9 +253,9 @@ jobs:
             ${diff}
             \`\`\`
 
-            </details>
+            </details>`;
 
-            ### How to Proceed
+                        const instructions = `### How to Proceed
 
             **Approve these updated changes:**
             \`\`\`
@@ -266,9 +265,9 @@ jobs:
             **Request more adjustments:**
             \`\`\`
             /review Your additional feedback here
-            \`\`\`
+            \`\`\``;
 
-            ---`;
+            const body = mainContent + '\n\n' + instructions;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
