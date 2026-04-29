@@ -95,6 +95,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
+      issues: read
     steps:
       - name: Get PR info
         id: pr
@@ -154,8 +155,9 @@ jobs:
     if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/review')
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
+      issues: read
     steps:
       - name: Extract review feedback
         id: feedback
