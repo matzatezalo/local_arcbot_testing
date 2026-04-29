@@ -61,40 +61,27 @@ jobs:
             
             const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
             
-            const mainContent = [
-              '## 📐 Architecture Diagrams - Proposed Changes Detected',
-              '',
-              'Proposed changes have been detected in your architecture diagrams.',
-              '',
-              '### Files to be Updated',
-              '',
-              fileList,
-              '',
-              '### View Changes',
-              '',
-              '<details>',
-              '<summary><b>Click to expand diff</b></summary>',
-              '',
-              '```diff',
-              diff,
-              '```',
-              '',
-              '</details>'
-            ].join('\n');
+            const mainContent = '## Architecture Diagrams - Proposed Changes Detected\n\n'
+              + 'Proposed changes have been detected in your architecture diagrams.\n\n'
+              + '### Files to be Updated\n\n'
+              + fileList + '\n\n'
+              + '### View Changes\n\n'
+              + '<details>\n'
+              + '<summary><b>Click to expand diff</b></summary>\n\n'
+              + '```diff\n'
+              + diff + '\n'
+              + '```\n\n'
+              + '</details>';
 
-            const instructions = [
-              '### How to Review or Approve',
-              '',
-              '**Approve these changes:**',
-              '```',
-              '/approve-diagrams',
-              '```',
-              '',
-              '**Request changes:**',
-              '```',
-              '/review Your feedback here',
-              '```'
-            ].join('\n');
+            const instructions = '### How to Review or Approve\n\n'
+              + '**Approve these changes:**\n'
+              + '```\n'
+              + '/approve-diagrams\n'
+              + '```\n\n'
+              + '**Request changes:**\n'
+              + '```\n'
+              + '/review Your feedback here\n'
+              + '```';
 
             const body = mainContent + '\n\n' + instructions;
 
@@ -240,40 +227,27 @@ jobs:
             
             const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
             
-            const mainContent = [
-              '## 📋 Updated Diagrams - Response to Your Feedback',
-              '',
-              'Diagrams have been re-analyzed based on your input.',
-              '',
-              '### Files to be Updated',
-              '',
-              fileList,
-              '',
-              '### View Changes',
-              '',
-              '<details>',
-              '<summary><b>Click to expand diff</b></summary>',
-              '',
-              '```diff',
-              diff,
-              '```',
-              '',
-              '</details>'
-            ].join('\n');
+            const mainContent = '## Updated Diagrams\n\n'
+              + 'Diagrams have been re-analyzed based on your input.\n\n'
+              + '### Files to be Updated\n\n'
+              + fileList + '\n\n'
+              + '### View Changes\n\n'
+              + '<details>\n'
+              + '<summary><b>Click to expand diff</b></summary>\n\n'
+              + '```diff\n'
+              + diff + '\n'
+              + '```\n\n'
+              + '</details>';
 
-            const instructions = [
-              '### How to Proceed',
-              '',
-              '**Approve these updated changes:**',
-              '```',
-              '/approve-diagrams',
-              '```',
-              '',
-              '**Request more adjustments:**',
-              '```',
-              '/review Your additional feedback here',
-              '```'
-            ].join('\n');
+            const instructions = '### How to Proceed\n\n'
+              + '**Approve these updated changes:**\n'
+              + '```\n'
+              + '/approve-diagrams\n'
+              + '```\n\n'
+              + '**Request more adjustments:**\n'
+              + '```\n'
+              + '/review Your additional feedback here\n'
+              + '```';
 
             const body = mainContent + '\n\n' + instructions;
 
