@@ -1,0 +1,65 @@
+name: Generate Architecture Diagrams
+description: Generates/updates architecture diagrams using OpenAI and SKILL.md rules
+
+inputs:
+  openai_api_key:
+    description: OpenAI API key
+    required: true
+  github_token:
+    description: GitHub token for committing back
+    required: true
+  head_ref:
+    description: PR head branch
+    required: true
+  base_sha:
+    description: Base commit SHA
+    required: true
+  comment_body:
+    description: Comment that triggered the action (if any)
+    required: false
+    default: ''
+
+outputs:
+  changed:
+    description: Whether diagrams were changed
+    value: ${{ steps.check.outputs.changed }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.head_ref }}
+        fetch-depth: 0
+
+    - name: Run architecture bot
+      shell: bash
+      env:
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+      run: |
+        if [[ -d "docs/architecture" ]]; then
+          export ANALYSIS_PATHS="src docs/architecture"
+        else
+          export ANALYSIS_PATHS="src"
+        fi
+        bash scripts/run_architecture_bot.sh
+
+    - name: Check if diagrams changed
+      id: check
+      shell: bash
+      run: |
+        if git diff --quiet docs/architecture/; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+          git diff docs/architecture/ > diagram_changes.diff
+        fi
+
+    - name: Upload diagram diff
+      if: steps.check.outputs.changed == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: diagram-changes
+        path: diagram_changes.diff
+        retention-days: 1
