@@ -90,7 +90,7 @@ jobs:
             });
 
   approve-and-commit:
-    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/approve-diagrams')
+    if: contains(github.event.comment.body, '/approve-diagrams')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -151,7 +151,7 @@ jobs:
             });
 
   request-changes:
-    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/review')
+    if: contains(github.event.comment.body, '/review')
     runs-on: ubuntu-latest
     permissions:
       contents: read
