@@ -4,6 +4,9 @@ on:
     branches: [main]
   issue_comment:
     types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
 
 jobs:
   detect-changes:
@@ -90,7 +93,7 @@ jobs:
             });
 
   approve-and-commit:
-    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/approve-diagrams')
+    if: (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') && contains(github.event.comment.body, '/approve-diagrams')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -152,7 +155,7 @@ jobs:
             });
 
   request-changes:
-    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/review')
+    if: (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') && contains(github.event.comment.body, '/review')
     runs-on: ubuntu-latest
     permissions:
       contents: write
