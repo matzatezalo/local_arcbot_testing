@@ -69,7 +69,7 @@ jobs:
               + '<details>\n'
               + '<summary><b>Click to expand diff</b></summary>\n\n'
               + '```diff\n'
-              + diff
+              + diff.trim() + '\n'
               + '```\n\n'
               + '</details>\n\n'
               + '### How to Review or Approve\n\n'
@@ -234,7 +234,7 @@ jobs:
               + '<details>\n'
               + '<summary><b>Click to expand diff</b></summary>\n\n'
               + '```diff\n'
-              + diff
+              + diff.trim() + '\n'
               + '```\n\n'
               + '</details>\n\n'
               + '### How to Proceed\n\n'
