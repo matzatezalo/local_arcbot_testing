@@ -61,36 +61,40 @@ jobs:
             
             const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
             
-            const mainContent = `## Architecture Diagrams - Proposed Changes Detected
+            const mainContent = [
+              '## 📐 Architecture Diagrams - Proposed Changes Detected',
+              '',
+              'Proposed changes have been detected in your architecture diagrams.',
+              '',
+              '### Files to be Updated',
+              '',
+              fileList,
+              '',
+              '### View Changes',
+              '',
+              '<details>',
+              '<summary><b>Click to expand diff</b></summary>',
+              '',
+              '```diff',
+              diff,
+              '```',
+              '',
+              '</details>'
+            ].join('\n');
 
-            Proposed changes have been detected in your architecture diagrams.
-
-            ### Files to be Updated
-
-            ${fileList}
-
-            ### View Changes
-
-            <details>
-            <summary><b>Click to expand diff</b></summary>
-
-            \`\`\`diff
-            ${diff}
-            \`\`\`
-
-            </details>`;
-
-            const instructions = `### How to Review or Approve
-
-            **Approve these changes:**
-            \`\`\`
-            /approve-diagrams
-            \`\`\`
-
-            **Request changes:**
-            \`\`\`
-            /review Your feedback here
-            \`\`\``;
+            const instructions = [
+              '### How to Review or Approve',
+              '',
+              '**Approve these changes:**',
+              '```',
+              '/approve-diagrams',
+              '```',
+              '',
+              '**Request changes:**',
+              '```',
+              '/review Your feedback here',
+              '```'
+            ].join('\n');
 
             const body = mainContent + '\n\n' + instructions;
 
@@ -236,36 +240,40 @@ jobs:
             
             const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
             
-            const mainContent = `## 📋 Updated Diagrams - Response to Your Feedback
+            const mainContent = [
+              '## 📋 Updated Diagrams - Response to Your Feedback',
+              '',
+              'Diagrams have been re-analyzed based on your input.',
+              '',
+              '### Files to be Updated',
+              '',
+              fileList,
+              '',
+              '### View Changes',
+              '',
+              '<details>',
+              '<summary><b>Click to expand diff</b></summary>',
+              '',
+              '```diff',
+              diff,
+              '```',
+              '',
+              '</details>'
+            ].join('\n');
 
-            Diagrams have been re-analyzed based on your input.
-
-            ### Files to be Updated
-
-            ${fileList}
-
-            ### View Changes
-
-            <details>
-            <summary><b>Click to expand diff</b></summary>
-
-            \`\`\`diff
-            ${diff}
-            \`\`\`
-
-            </details>`;
-
-                        const instructions = `### How to Proceed
-
-            **Approve these updated changes:**
-            \`\`\`
-            /approve-diagrams
-            \`\`\`
-
-            **Request more adjustments:**
-            \`\`\`
-            /review Your additional feedback here
-            \`\`\``;
+            const instructions = [
+              '### How to Proceed',
+              '',
+              '**Approve these updated changes:**',
+              '```',
+              '/approve-diagrams',
+              '```',
+              '',
+              '**Request more adjustments:**',
+              '```',
+              '/review Your additional feedback here',
+              '```'
+            ].join('\n');
 
             const body = mainContent + '\n\n' + instructions;
 
