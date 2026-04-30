@@ -170,11 +170,20 @@ PROMPT="${PROMPT//%CODEBASE%/$CODEBASE_CONTEXT}"
 
 # Handle user feedback if provided
 if [[ -n "${COMMENT_BODY:-}" ]]; then
-    # Use printf to safely escape the feedback for sed
-    FEEDBACK_SECTION=$(printf 'User Feedback / Requirements:\n%s\n\nPlease incorporate this feedback into your diagram generation. Adjust entities, relationships, flows, and structure as needed to address the user'\''s requirements.' "$COMMENT_BODY")
-    # Use sed with a different delimiter to avoid issues with the content
-    PROMPT=$(echo "$PROMPT" | sed 's|%FEEDBACK_SECTION%|'"$(printf '%s\n' "$FEEDBACK_SECTION" | sed -e 's/[\/&]/\\&/g')"'|')
-    echo "DEBUG: Feedback section included: ${#FEEDBACK_SECTION} characters"
+    # Extract feedback from comment (remove /review command)
+    FEEDBACK=$(echo "$COMMENT_BODY" | sed 's|^/review\s*||i' | xargs)
+    
+    if [[ -n "$FEEDBACK" ]]; then
+        # Use printf to safely escape the feedback for sed
+        FEEDBACK_SECTION=$(printf 'User Feedback / Requirements:\n%s\n\nPlease incorporate this feedback into your diagram generation. Adjust entities, relationships, flows, and structure as needed to address the user'\''s requirements.' "$FEEDBACK")
+        # Use sed with a different delimiter to avoid issues with the content
+        PROMPT=$(echo "$PROMPT" | sed 's|%FEEDBACK_SECTION%|'"$(printf '%s\n' "$FEEDBACK_SECTION" | sed -e 's/[\/&]/\\&/g')"'|')
+        echo "DEBUG: Feedback section included: ${#FEEDBACK_SECTION} characters"
+        echo "DEBUG: Feedback content: $FEEDBACK"
+    else
+        PROMPT="${PROMPT//%FEEDBACK_SECTION%/}"
+        echo "DEBUG: No feedback content after extracting from comment"
+    fi
 else
     PROMPT="${PROMPT//%FEEDBACK_SECTION%/}"
     echo "DEBUG: No feedback provided, feedback section removed"
