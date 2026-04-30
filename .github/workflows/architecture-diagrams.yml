@@ -47,13 +47,29 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
+            
+            const diagramDir = 'docs/architecture';
+            let fileList = '';
+            
+            if (fs.existsSync(diagramDir)) {
+              const dirents = fs.readdirSync(diagramDir, { withFileTypes: true });
+              const files = dirents
+                .filter(d => d.isFile() && d.name.endsWith('.md'))
+                .map(d => `- \`${d.name}\``);
+              
+              if (files.length > 0) {
+                fileList = '\n\n### Generated Files\n\n' + files.join('\n');
+              }
+            }
+            
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## Architecture Diagrams Ready for Review\n\n'
-                + 'Initial diagrams have been generated based on your codebase.\n\n'
-                + '👉 **View them in the "Files changed" tab** (`docs/architecture/`)\n\n'
+              body: '## Architecture Diagrams Updated\n\n'
+                + 'Updated files:' + fileList + '\n\n'
+                + '👉 **View changes in the "Files changed" tab**\n\n'
                 + '### Next Steps\n\n'
                 + 'Provide feedback to adjust the diagrams:\n'
                 + '```\n'
