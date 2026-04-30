@@ -4,9 +4,6 @@ on:
     branches: [main]
   issue_comment:
     types: [created]
-  pull_request_review_comment:
-    types: [created]
-  workflow_dispatch:
 
 jobs:
   detect-changes:
@@ -59,7 +56,7 @@ jobs:
                 .map(d => `- \`${d.name}\``);
               
               if (files.length > 0) {
-                fileList = '\n\n### Updated Files\n\n' + files.join('\n');
+                fileList = '\n\n### Generated/Updated Diagram Files\n\n' + files.join('\n');
               }
             }
             
@@ -67,7 +64,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## Updated Architecture Diagrams - Ready for Review\n\n'
+              body: '## Architecture Diagrams - Ready for Review\n\n'
                 + fileList + '\n\n'
                 + '👉 **View changes in the "Files changed" tab**\n\n'
                 + '### Next Steps\n\n'
@@ -135,7 +132,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add docs/architecture/
-            git commit -m "Update architecture diagrams based on feedback"
+            git commit -m "feat: Updated architecture diagrams based on feedback"
             git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ steps.pr.outputs.head_ref }}
             echo "committed=true" >> $GITHUB_OUTPUT
           else
