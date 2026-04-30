@@ -211,6 +211,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           head_ref: ${{ steps.pr.outputs.head_ref }}
           base_sha: ${{ steps.pr.outputs.base_sha }}
+          comment_body: ${{ steps.feedback.outputs.reason }}
 
       - name: Download diagram diff
         uses: actions/download-artifact@v4
