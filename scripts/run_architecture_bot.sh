@@ -45,6 +45,14 @@ fi
 SKILL=$(cat "$SKILL_PATH")
 print_success "SKILL.md loaded ($(wc -c < "$SKILL_PATH") bytes)"
 
+# Debug: Show feedback if provided
+if [[ -n "${COMMENT_BODY:-}" ]]; then
+    print_step "Feedback provided: ${#COMMENT_BODY} characters"
+    echo "Content preview: ${COMMENT_BODY:0:100}..."
+else
+    print_warning "No COMMENT_BODY environment variable detected"
+fi
+
 # Collect codebase context
 print_step "Collecting codebase context..."
 
