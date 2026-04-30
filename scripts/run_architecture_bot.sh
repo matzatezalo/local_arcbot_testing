@@ -184,10 +184,14 @@ PROMPT=$(echo "$PROMPT" | sed '/^[[:space:]]*$/N;/^\n$/D')
 OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
 
 # Create the request JSON
+# Use --rawfile to read prompt from temp file to avoid "Argument list too long" with large diffs
+PROMPT_FILE=$(mktemp)
+echo "$PROMPT" > "$PROMPT_FILE"
+
 REQUEST_JSON=$(jq -n \
     --arg model "$OPENAI_MODEL" \
     --argjson max_tokens 8000 \
-    --arg content "$PROMPT" \
+    --rawfile content "$PROMPT_FILE" \
     '{
         model: $model,
         max_tokens: $max_tokens,
@@ -200,8 +204,11 @@ REQUEST_JSON=$(jq -n \
     }' 2>&1) || {
     print_error "Failed to build request JSON with jq"
     echo "Error: $REQUEST_JSON" >&2
+    rm -f "$PROMPT_FILE"
     exit 1
 }
+
+rm -f "$PROMPT_FILE"
 
 # Call OpenAI API
 RESPONSE=$(curl -s -X POST \
