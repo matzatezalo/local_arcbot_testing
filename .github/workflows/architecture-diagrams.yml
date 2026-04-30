@@ -169,7 +169,7 @@ jobs:
           script: |
             const body = context.payload.comment.body;
             const feedback = body.replace(/\/review\s*/i, '').trim();
-            console.log(`Raw comment body: ${body}`);
+            console.log(`Raw comment BODY: ${body}`);
             console.log(`Extracted feedback: ${feedback}`);
             core.setOutput('reason', feedback || 'Please adjust the diagrams to match your changes');
 
