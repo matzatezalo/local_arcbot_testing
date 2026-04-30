@@ -42,40 +42,46 @@ jobs:
           head_ref: ${{ steps.pr.outputs.head_ref }}
           base_sha: ${{ steps.pr.outputs.base_sha }}
 
-      - name: Download diagram diff
-        if: steps.generate.outputs.changed == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: diagram-changes
-          path: /tmp
-
       - name: Post diagram changes for review
         if: steps.generate.outputs.changed == 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const diff = fs.readFileSync('/tmp/diagram_changes.diff', 'utf8');
+            const path = require('path');
             
-            // Extract file names from diff
-            const fileMatches = diff.match(/^diff --git a\/(.*?) b\/.*$/gm) || [];
-            const files = fileMatches.map(match => match.replace(/^diff --git a\/(.*?) b\/.*$/, '$1'));
-            const uniqueFiles = [...new Set(files)];
+            const diagramDir = 'docs/architecture';
+            let body = '## Architecture Diagrams - Proposed Changes Detected\n\n'
+              + 'Proposed changes have been detected in your architecture diagrams.\n\n';
             
-            const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
+            if (!fs.existsSync(diagramDir)) {
+              body += 'No diagrams generated yet.\n\n';
+            } else {
+              const files = fs.readdirSync(diagramDir).filter(f => f.endsWith('.md'));
+              
+              if (files.length === 0) {
+                body += 'No diagram files found.\n\n';
+              } else {
+                body += `### Generated Diagrams (${files.length})\n\n`;
+                
+                for (const file of files) {
+                  const filepath = path.join(diagramDir, file);
+                  const content = fs.readFileSync(filepath, 'utf8');
+                  
+                  // Extract mermaid code block
+                  const mermaidMatch = content.match(/```mermaid\n([\s\S]*?)\n```/);
+                  if (mermaidMatch) {
+                    const mermaidCode = mermaidMatch[1];
+                    body += `#### ${file}\n\n`
+                      + '```mermaid\n'
+                      + mermaidCode + '\n'
+                      + '```\n\n';
+                  }
+                }
+              }
+            }
             
-            const body = '## Architecture Diagrams - Proposed Changes Detected\n\n'
-              + 'Proposed changes have been detected in your architecture diagrams.\n\n'
-              + '### Files to be Updated\n\n'
-              + fileList + '\n\n'
-              + '### View Changes\n\n'
-              + '<details>\n'
-              + '<summary><b>Click to expand diff</b></summary>\n\n'
-              + '```diff\n'
-              + diff.trim() + '\n'
-              + '```\n\n'
-              + '</details>\n\n'
-              + '### How to Review or Approve\n\n'
+            body += '### How to Review or Approve\n\n'
               + '**Approve these changes:**\n'
               + '```\n'
               + '/approve-diagrams\n'
@@ -202,38 +208,45 @@ jobs:
           base_sha: ${{ steps.pr.outputs.base_sha }}
           comment_body: ${{ github.event.comment.body }}
 
-      - name: Download diagram diff
-        uses: actions/download-artifact@v4
-        with:
-          name: diagram-changes
-          path: /tmp
-
       - name: Post updated diagram changes for review
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const diff = fs.readFileSync('/tmp/diagram_changes.diff', 'utf8');
+            const path = require('path');
             
-            // Extract file names from diff
-            const fileMatches = diff.match(/^diff --git a\/(.*?) b\/.*$/gm) || [];
-            const files = fileMatches.map(match => match.replace(/^diff --git a\/(.*?) b\/.*$/, '$1'));
-            const uniqueFiles = [...new Set(files)];
+            const diagramDir = 'docs/architecture';
+            let body = '## Updated Diagrams\n\n'
+              + 'Diagrams have been re-analyzed based on your input.\n\n';
             
-            const fileList = uniqueFiles.map(f => `- \`${f}\``).join('\n');
+            if (!fs.existsSync(diagramDir)) {
+              body += 'No diagrams generated yet.\n\n';
+            } else {
+              const files = fs.readdirSync(diagramDir).filter(f => f.endsWith('.md'));
+              
+              if (files.length === 0) {
+                body += 'No diagram files found.\n\n';
+              } else {
+                body += `### Generated Diagrams (${files.length})\n\n`;
+                
+                for (const file of files) {
+                  const filepath = path.join(diagramDir, file);
+                  const content = fs.readFileSync(filepath, 'utf8');
+                  
+                  // Extract mermaid code block
+                  const mermaidMatch = content.match(/```mermaid\n([\s\S]*?)\n```/);
+                  if (mermaidMatch) {
+                    const mermaidCode = mermaidMatch[1];
+                    body += `#### ${file}\n\n`
+                      + '```mermaid\n'
+                      + mermaidCode + '\n'
+                      + '```\n\n';
+                  }
+                }
+              }
+            }
             
-            const body = '## Updated Diagrams\n\n'
-              + 'Diagrams have been re-analyzed based on your input.\n\n'
-              + '### Files to be Updated\n\n'
-              + fileList + '\n\n'
-              + '### View Changes\n\n'
-              + '<details>\n'
-              + '<summary><b>Click to expand diff</b></summary>\n\n'
-              + '```diff\n'
-              + diff.trim() + '\n'
-              + '```\n\n'
-              + '</details>\n\n'
-              + '### How to Proceed\n\n'
+            body += '### How to Proceed\n\n'
               + '**Approve these updated changes:**\n'
               + '```\n'
               + '/approve-diagrams\n'
