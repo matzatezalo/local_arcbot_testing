@@ -193,7 +193,7 @@ if [[ ! -f "$PROMPT_FILE" ]]; then
     exit 1
 fi
 
-print_step "Building request JSON (prompt file: $PROMPT_FILE)..."
+print_step "Building request JSON (prompt file: $PROMPT_FILE, size: $(wc -c < "$PROMPT_FILE") bytes)..."
 
 REQUEST_JSON=$(jq -n \
     --arg model "$OPENAI_MODEL" \
@@ -211,10 +211,12 @@ REQUEST_JSON=$(jq -n \
     }' 2>&1)
 
 JQ_EXIT_CODE=$?
+echo "jq exit code: $JQ_EXIT_CODE" >&2
 if [[ $JQ_EXIT_CODE -ne 0 ]]; then
     print_error "Failed to build request JSON with jq (exit code: $JQ_EXIT_CODE)"
-    echo "Error output:" >&2
+    echo "jq stderr:" >&2
     echo "$REQUEST_JSON" >&2
+    ls -lh "$PROMPT_FILE" >&2
     rm -f "$PROMPT_FILE"
     exit 1
 fi
