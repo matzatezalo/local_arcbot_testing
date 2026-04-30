@@ -39,19 +39,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         COMMENT_BODY: ${{ inputs.comment_body }}
         BASE_SHA: ${{ inputs.base_sha }}
-      run: |
-        export COMMENT_BODY
-
-        # Generate full PR diff between merge-base and HEAD
-        DIFF_OUTPUT=$(git diff "${BASE_SHA}...HEAD" 2>/dev/null || true)
-
-        if [[ -z "$DIFF_OUTPUT" ]]; then
-          echo "No changes in this PR — skipping diagram generation"
-          exit 0
-        fi
-
-        export GIT_DIFF="$DIFF_OUTPUT"
-        bash scripts/run_architecture_bot.sh
+      run: bash scripts/run_architecture_bot.sh
 
     - name: Check if diagrams changed
       id: check
