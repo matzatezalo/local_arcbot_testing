@@ -164,7 +164,7 @@ CRITICAL REQUIREMENTS:
 - Content must include complete Mermaid diagrams, not placeholders
 PROMPT_END
 
-# Replace placeholders
+# Replace placeholders - build prompt safely
 PROMPT="${PROMPT//%SKILL%/$SKILL}"
 PROMPT="${PROMPT//%CODEBASE%/$CODEBASE_CONTEXT}"
 
@@ -174,10 +174,11 @@ if [[ -n "${COMMENT_BODY:-}" ]]; then
     FEEDBACK=$(echo "$COMMENT_BODY" | sed 's|^/review\s*||i' | xargs)
     
     if [[ -n "$FEEDBACK" ]]; then
-        # Use printf to safely escape the feedback for sed
-        FEEDBACK_SECTION=$(printf 'User Feedback / Requirements:\n%s\n\nPlease incorporate this feedback into your diagram generation. Adjust entities, relationships, flows, and structure as needed to address the user'\''s requirements.' "$FEEDBACK")
-        # Use sed with a different delimiter to avoid issues with the content
-        PROMPT=$(echo "$PROMPT" | sed 's|%FEEDBACK_SECTION%|'"$(printf '%s\n' "$FEEDBACK_SECTION" | sed -e 's/[\/&]/\\&/g')"'|')
+        # Build feedback section as single-line to avoid sed issues with newlines
+        FEEDBACK_SECTION="User Feedback / Requirements: $FEEDBACK. Please incorporate this feedback into your diagram generation."
+        # Escape special chars for sed and perform substitution
+        FEEDBACK_ESCAPED=$(printf '%s\n' "$FEEDBACK_SECTION" | sed -e 's/[\/&]/\\&/g')
+        PROMPT=$(echo "$PROMPT" | sed "s|%FEEDBACK_SECTION%|$FEEDBACK_ESCAPED|")
         echo "DEBUG: Feedback section included: ${#FEEDBACK_SECTION} characters"
         echo "DEBUG: Feedback content: $FEEDBACK"
     else
