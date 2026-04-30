@@ -39,8 +39,6 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         COMMENT_BODY: ${{ inputs.comment_body }}
       run: |
-        echo "DEBUG: COMMENT_BODY value: '$COMMENT_BODY'"
-        echo "DEBUG: COMMENT_BODY length: ${#COMMENT_BODY}"
         export COMMENT_BODY
         if [[ -d "docs/architecture" ]]; then
           export ANALYSIS_PATHS="src docs/architecture"

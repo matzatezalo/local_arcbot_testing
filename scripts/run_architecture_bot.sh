@@ -179,15 +179,11 @@ if [[ -n "${COMMENT_BODY:-}" ]]; then
         # Escape special chars for sed and perform substitution
         FEEDBACK_ESCAPED=$(printf '%s\n' "$FEEDBACK_SECTION" | sed -e 's/[\/&]/\\&/g')
         PROMPT=$(echo "$PROMPT" | sed "s|%FEEDBACK_SECTION%|$FEEDBACK_ESCAPED|")
-        echo "DEBUG: Feedback section included: ${#FEEDBACK_SECTION} characters"
-        echo "DEBUG: Feedback content: $FEEDBACK"
     else
         PROMPT="${PROMPT//%FEEDBACK_SECTION%/}"
-        echo "DEBUG: No feedback content after extracting from comment"
     fi
 else
     PROMPT="${PROMPT//%FEEDBACK_SECTION%/}"
-    echo "DEBUG: No feedback provided, feedback section removed"
 fi
 
 # Remove extra blank lines
