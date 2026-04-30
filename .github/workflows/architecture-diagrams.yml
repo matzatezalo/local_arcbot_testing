@@ -47,63 +47,31 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
-            
-            const diagramDir = 'docs/architecture';
-            let body = '## Architecture Diagrams - Proposed Changes Detected\n\n'
-              + 'Proposed changes have been detected in your architecture diagrams.\n\n';
-            
-            if (!fs.existsSync(diagramDir)) {
-              body += 'No diagrams generated yet.\n\n';
-            } else {
-              const files = fs.readdirSync(diagramDir).filter(f => f.endsWith('.md'));
-              
-              if (files.length === 0) {
-                body += 'No diagram files found.\n\n';
-              } else {
-                body += `### Generated Diagrams (${files.length})\n\n`;
-                
-                for (const file of files) {
-                  const filepath = path.join(diagramDir, file);
-                  const content = fs.readFileSync(filepath, 'utf8');
-                  
-                  // Extract mermaid code block
-                  const mermaidMatch = content.match(/```mermaid\n([\s\S]*?)\n```/);
-                  if (mermaidMatch) {
-                    const mermaidCode = mermaidMatch[1];
-                    body += `#### ${file}\n\n`
-                      + '```mermaid\n'
-                      + mermaidCode + '\n'
-                      + '```\n\n';
-                  }
-                }
-              }
-            }
-            
-            body += '### How to Review or Approve\n\n'
-              + '**Approve these changes:**\n'
-              + '```\n'
-              + '/approve-diagrams\n'
-              + '```\n\n'
-              + '**Request changes:**\n'
-              + '```\n'
-              + '/review Your feedback here\n'
-              + '```';
-
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: body
+              body: '## Architecture Diagrams Ready for Review\n\n'
+                + 'Initial diagrams have been generated based on your codebase.\n\n'
+                + '👉 **View them in the "Files changed" tab** (`docs/architecture/`)\n\n'
+                + '### Next Steps\n\n'
+                + 'Provide feedback to adjust the diagrams:\n'
+                + '```\n'
+                + '/review Your feedback here\n'
+                + '```\n\n'
+                + 'For example:\n'
+                + '```\n'
+                + '/review Add a VIPOrder entity with premium attributes\n'
+                + '```'
             });
 
-  approve-and-commit:
-    if: (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') && contains(github.event.comment.body, '/approve-diagrams')
+
+  request-changes:
+    if: (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') && contains(github.event.comment.body, '/review')
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: read
+      pull-requests: write
       issues: read
     steps:
       - name: Get PR info
@@ -124,50 +92,6 @@ jobs:
           ref: ${{ steps.pr.outputs.head_ref }}
           fetch-depth: 0
 
-      - name: Re-generate diagrams (accounting for new commits)
-        uses: ./.github/actions/generate-diagrams
-        with:
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          head_ref: ${{ steps.pr.outputs.head_ref }}
-          base_sha: ${{ steps.pr.outputs.base_sha }}
-
-      - name: Commit diagram updates
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if ! git diff --quiet docs/architecture/; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add docs/architecture/
-            git commit -m "Update architecture diagrams (approved)"
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ steps.pr.outputs.head_ref }}
-            
-            echo "Diagrams committed and pushed"
-          else
-            echo "No changes to commit"
-          fi
-
-      - name: Post approval comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `Architecture diagrams have been approved and updated!`
-            });
-
-  request-changes:
-    if: (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') && contains(github.event.comment.body, '/review')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: read
-    steps:
       - name: Post review acknowledgment
         uses: actions/github-script@v7
         with:
@@ -178,26 +102,8 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Feedback received. Re-analyzing diagrams with your input...\n\n**Your feedback:** ${feedback}`
+              body: `Analyzing your feedback...\n\n**Your feedback:** ${feedback}`
             });
-
-      - name: Get PR info
-        id: pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number
-            });
-            core.setOutput('head_ref', pr.data.head.ref);
-            core.setOutput('base_sha', pr.data.base.sha);
-
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pr.outputs.head_ref }}
-          fetch-depth: 0
 
       - name: Re-generate diagrams
         uses: ./.github/actions/generate-diagrams
@@ -208,57 +114,51 @@ jobs:
           base_sha: ${{ steps.pr.outputs.base_sha }}
           comment_body: ${{ github.event.comment.body }}
 
-      - name: Post updated diagram changes for review
+      - name: Commit diagram updates
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! git diff --quiet docs/architecture/; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/architecture/
+            git commit -m "Update architecture diagrams based on feedback"
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ steps.pr.outputs.head_ref }}
+            echo "committed=true" >> $GITHUB_OUTPUT
+          else
+            echo "committed=false" >> $GITHUB_OUTPUT
+          fi
+        id: commit
+
+      - name: Post update summary
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
+            const committed = '${{ steps.commit.outputs.committed }}' === 'true';
             
-            const diagramDir = 'docs/architecture';
-            let body = '## Updated Diagrams\n\n'
-              + 'Diagrams have been re-analyzed based on your input.\n\n';
-            
-            if (!fs.existsSync(diagramDir)) {
-              body += 'No diagrams generated yet.\n\n';
-            } else {
-              const files = fs.readdirSync(diagramDir).filter(f => f.endsWith('.md'));
+            if (committed) {
+              const fs = require('fs');
+              const dirents = fs.readdirSync('docs/architecture', { withFileTypes: true });
+              const files = dirents
+                .filter(d => d.isFile() && d.name.endsWith('.md'))
+                .map(d => `- \`${d.name}\``)
+                .join('\n');
               
-              if (files.length === 0) {
-                body += 'No diagram files found.\n\n';
-              } else {
-                body += `### Generated Diagrams (${files.length})\n\n`;
-                
-                for (const file of files) {
-                  const filepath = path.join(diagramDir, file);
-                  const content = fs.readFileSync(filepath, 'utf8');
-                  
-                  // Extract mermaid code block
-                  const mermaidMatch = content.match(/```mermaid\n([\s\S]*?)\n```/);
-                  if (mermaidMatch) {
-                    const mermaidCode = mermaidMatch[1];
-                    body += `#### ${file}\n\n`
-                      + '```mermaid\n'
-                      + mermaidCode + '\n'
-                      + '```\n\n';
-                  }
-                }
-              }
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '✅ Diagrams updated and committed!\n\n'
+                  + 'Updated files:\n'
+                  + files + '\n\n'
+                  + '👉 **View changes in the "Files changed" tab**'
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: 'No changes needed - diagrams already match the feedback'
+              });
             }
-            
-            body += '### How to Proceed\n\n'
-              + '**Approve these updated changes:**\n'
-              + '```\n'
-              + '/approve-diagrams\n'
-              + '```\n\n'
-              + '**Request more adjustments:**\n'
-              + '```\n'
-              + '/review Your additional feedback here\n'
-              + '```';
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
