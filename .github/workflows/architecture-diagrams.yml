@@ -59,7 +59,7 @@ jobs:
                 .map(d => `- \`${d.name}\``);
               
               if (files.length > 0) {
-                fileList = '\n\n### Generated Files\n\n' + files.join('\n');
+                fileList = '\n\n### Updated Files\n\n' + files.join('\n');
               }
             }
             
@@ -67,17 +67,13 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## Architecture Diagrams Updated\n\n'
-                + 'Updated files:' + fileList + '\n\n'
+              body: '## Updated Architecture Diagrams - Ready for Review\n\n'
+                + fileList + '\n\n'
                 + '👉 **View changes in the "Files changed" tab**\n\n'
                 + '### Next Steps\n\n'
                 + 'Provide feedback to adjust the diagrams:\n'
                 + '```\n'
                 + '/review Your feedback here\n'
-                + '```\n\n'
-                + 'For example:\n'
-                + '```\n'
-                + '/review Add a VIPOrder entity with premium attributes\n'
                 + '```'
             });
 
@@ -166,7 +162,6 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: '✅ Diagrams updated and committed!\n\n'
-                  + 'Updated files:\n'
                   + files + '\n\n'
                   + '👉 **View changes in the "Files changed" tab**'
               });
