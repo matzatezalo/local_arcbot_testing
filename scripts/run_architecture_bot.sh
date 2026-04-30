@@ -56,9 +56,18 @@ fi
 # Collect diff context
 print_step "Collecting diff context..."
 
-if [[ -z "${GIT_DIFF:-}" ]]; then
-    print_error "GIT_DIFF env var not set — this script must be run via the CI action"
+# Generate diff from CI (BASE_SHA should be set; if not, the script is being run locally without proper context)
+if [[ -z "${BASE_SHA:-}" ]]; then
+    print_error "BASE_SHA env var not set — this script must be run via the CI action"
     exit 1
+fi
+
+# Generate the full PR diff between merge-base and HEAD
+GIT_DIFF=$(git diff "${BASE_SHA}...HEAD" 2>/dev/null || true)
+
+if [[ -z "$GIT_DIFF" ]]; then
+    print_warning "No changes in this PR — skipping diagram generation"
+    exit 0
 fi
 
 # Strip binary file annotations (non-text, would corrupt JSON payload)
