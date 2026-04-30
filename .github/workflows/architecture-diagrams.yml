@@ -162,28 +162,17 @@ jobs:
       pull-requests: write
       issues: read
     steps:
-      - name: Extract review feedback
-        id: feedback
+      - name: Post review acknowledgment
         uses: actions/github-script@v7
         with:
           script: |
             const body = context.payload.comment.body;
             const feedback = body.replace(/\/review\s*/i, '').trim();
-            core.setOutput('reason', feedback || 'Please adjust the diagrams to match your changes');
-
-      - name: Post review acknowledgment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const feedback = `${{ steps.feedback.outputs.reason }}`;
-            const body = 'Feedback received. Re-analyzing diagrams with your input...\n\n'
-              + '**Your feedback:** ' + feedback;
-            
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: body
+              body: `Feedback received. Re-analyzing diagrams with your input...\n\n**Your feedback:** ${feedback}`
             });
 
       - name: Get PR info
@@ -211,6 +200,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           head_ref: ${{ steps.pr.outputs.head_ref }}
           base_sha: ${{ steps.pr.outputs.base_sha }}
+          comment_body: ${{ github.event.comment.body }}
 
       - name: Download diagram diff
         uses: actions/download-artifact@v4
