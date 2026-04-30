@@ -188,6 +188,13 @@ OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
 PROMPT_FILE=$(mktemp)
 echo "$PROMPT" > "$PROMPT_FILE"
 
+if [[ ! -f "$PROMPT_FILE" ]]; then
+    print_error "Failed to create temp file for prompt"
+    exit 1
+fi
+
+print_step "Building request JSON (prompt file: $PROMPT_FILE)..."
+
 REQUEST_JSON=$(jq -n \
     --arg model "$OPENAI_MODEL" \
     --argjson max_tokens 8000 \
@@ -201,12 +208,22 @@ REQUEST_JSON=$(jq -n \
                 content: $content
             }
         ]
-    }' 2>&1) || {
-    print_error "Failed to build request JSON with jq"
-    echo "Error: $REQUEST_JSON" >&2
+    }' 2>&1)
+
+JQ_EXIT_CODE=$?
+if [[ $JQ_EXIT_CODE -ne 0 ]]; then
+    print_error "Failed to build request JSON with jq (exit code: $JQ_EXIT_CODE)"
+    echo "Error output:" >&2
+    echo "$REQUEST_JSON" >&2
     rm -f "$PROMPT_FILE"
     exit 1
-}
+fi
+
+if [[ -z "$REQUEST_JSON" ]]; then
+    print_error "jq produced empty output"
+    rm -f "$PROMPT_FILE"
+    exit 1
+fi
 
 rm -f "$PROMPT_FILE"
 
