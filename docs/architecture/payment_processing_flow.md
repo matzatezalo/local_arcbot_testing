@@ -21,13 +21,13 @@ flowchart TD
 
 ## Process Dictionary
 
-* **Start: process_payment:** Begins the processing of payment after a client initiates a charge operation with an order ID and amount.
-* **Find Order in Repository:** Check order existence and retrieve it for payment.
-* **Order exists?:** If not found, throw an error; else, proceed to payment creation.
-* **Throw: Order Not Found:** Halt flow, respond with an error to the client.
-* **Create Payment Record:** Generate a payment entity tied to the order.
-* **Set Payment Provider Reference:** Assign a provider-specific reference for audit/followup.
-* **Call PaymentService.charge:** Process the payment with the external provider logic.
-* **Mark Order as Paid:** Update order status to reflect successful payment.
-* **Set Payment Status to completed:** Confirm payment completion in the payment record.
-* **Return Payment:** Output payment details to API client with all relevant identifiers and statuses.
+* **Start: process_payment:** Entry to begin payment for an order.
+* **Find Order in Repository:** Retrieve order record for charging.
+* **Order exists?:** Decision if order lookup succeeds.
+* **Throw: Order Not Found:** Ends flow if order is missing.
+* **Create Payment Record:** Establish Payment entity and related data.
+* **Set Payment Provider Reference:** Set provider-specific ref for the payment.
+* **Call PaymentService.charge:** Interact with payment provider to process payment.
+* **Mark Order as Paid:** Update Order status after payment success.
+* **Set Payment Status to completed:** Reflect payment completed status in system.
+* **Return Payment:** Output payment receipt and details.

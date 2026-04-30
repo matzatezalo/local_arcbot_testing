@@ -18,8 +18,8 @@ flowchart TD
 ## Process Dictionary
 
 * **Start: create_order:** Entry point invoked when a client requests creation of a new order, supplying customer and item details.
-* **Create Order with customerId and items:** Instantiate new `Order` domain entity (or subtype), assign a unique orderId, initialize with 'pending' status.
-* **Save Order to Repository:** Persist order data using repository pattern.
-* **Calculate Order Total:** Sum all line item subtotals and any special fees (e.g., PriorityOrder or VIPOrder surcharge).
-* **Set Order Status to pending:** Ensure order's initial state is pending payment.
-* **Return Order:** Provide resulting order (with all data populated) to the API client.
+* **Create Order with customerId and items:** Instantiate a new Order domain entity (or subtype), assign unique orderId, set status as pending.
+* **Save Order to Repository:** Persist the order using the repository.
+* **Calculate Order Total:** Sum item subtotals and add any priority/vip fees.
+* **Set Order Status to pending:** Ensure Order’s initial state is pending.
+* **Return Order:** Send back the created Order with details filled in.

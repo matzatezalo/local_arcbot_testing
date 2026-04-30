@@ -52,8 +52,8 @@ classDiagram
 
 ## Entity Dictionary
 
-* **Order:** Represents an individual customer purchase with associated items, status, and total computation logic. Can be marked as 'paid' upon successful payment.
-* **PriorityOrder:** Specialized Order with additional fee for expedited processing. Overrides total calculation to include priority fee.
-* **VIPOrder:** Enhanced type of order specifically for VIP customers; applies an extra vipFee charge.
-* **Payment:** Represents a payment transaction for an order, including references to the payment provider, amount, and transaction status. Can check if payment has completed successfully.
-* **Refund:** Tracks refund attempts or completions for a specific payment, including amount, reason for refund, and processing status. Has logic for approval and completion steps.
+* **Order:** Represents a customer purchase containing multiple items, unique orderId, payment status, and logic for total calculation and status changes.  
+* **PriorityOrder:** A type of Order with an additional priority fee, overriding total calculation logic.  
+* **VIPOrder:** Special Order subtype for VIP customers, includes an extra vipFee attribute for premium purchases.  
+* **Payment:** Records a monetary transaction for a specific order, with references to provider, status, and logic to verify successful completion.  
+* **Refund:** Captures refund actions for a payment, references paymentId, amount, reason, and methods for approving or completing a refund process.
