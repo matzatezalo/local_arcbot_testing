@@ -118,6 +118,8 @@ You MUST follow these rules EXACTLY from SKILL.md:
 Analyze this codebase:
 %CODEBASE%
 
+%FEEDBACK_SECTION%
+
 Generate the diagrams and return ONLY this JSON structure with metadata about your filtering decisions:
 
 {
@@ -157,6 +159,21 @@ PROMPT_END
 # Replace placeholders
 PROMPT="${PROMPT//%SKILL%/$SKILL}"
 PROMPT="${PROMPT//%CODEBASE%/$CODEBASE_CONTEXT}"
+
+# Handle user feedback if provided
+if [[ -n "${COMMENT_BODY:-}" ]]; then
+    FEEDBACK_SECTION="User Feedback / Requirements:
+$COMMENT_BODY
+
+Please incorporate this feedback into your diagram generation. Adjust entities, relationships, flows, and structure as needed to address the user's requirements."
+else
+    FEEDBACK_SECTION=""
+fi
+
+PROMPT="${PROMPT//%FEEDBACK_SECTION%/$FEEDBACK_SECTION}"
+
+# Remove empty feedback section if not provided
+PROMPT="${PROMPT//$'\n\n\n'/$'\n\n'}"
 
 # Set OpenAI model (default: gpt-4.1)
 OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
