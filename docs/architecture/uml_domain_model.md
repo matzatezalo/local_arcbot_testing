@@ -1,7 +1,8 @@
-# Architecture Model: Order Management Domain
+# Architecture Model: Domain
 
 **Generated on:** April 28, 2026
-**Source Scope:** `/src`
+
+**Source Scope:** `src`
 
 ## Mermaid Diagram
 
@@ -13,13 +14,17 @@ classDiagram
         +orderId: string
         +status: string
         +total: float
-        +calculateTotal() float
+        +calculateTotal(): float
         +markPaid()
     }
 
     class PriorityOrder {
         +priorityFee: float
-        +calculateTotal() float
+        +calculateTotal(): float
+    }
+
+    class VIPOrder {
+        +vipFee: float
     }
 
     class Payment {
@@ -28,19 +33,27 @@ classDiagram
         +providerRef: string
         +paymentId: string
         +status: string
+        +isSuccessful(): bool
     }
 
-    Order "1" --o "0..*" Payment
+    class Refund {
+        +paymentId: string
+        +amount: float
+        +reason: string
+        +refundId: string
+        +status: string
+        +approve()
+        +complete()
+    }
+
+    Order "1" o-- "0..*" Payment
+    Payment "1" o-- "0..1" Refund
 ```
 
 ## Entity Dictionary
 
-* **Order:** Primary domain entity representing a customer order. Maintains order state (pending/paid), item list, and calculated total. Responsible for computing total price and marking payment status.
-
-* **PriorityOrder:** Specialization of Order with premium handling. Adds a priority fee to the base order total. Overrides total calculation logic to include priority surcharge.
-
-* **Payment:** Domain entity representing a payment transaction for an order. Stores payment provider reference, amount, and transaction status. Used to track payment completion and support refund operations.
-
-## Relationship Notes
-
-* **Order → Payment (Aggregation, 1..*):** One Order can have multiple associated Payments (e.g., partial payments, failed attempts). Payment maintains reference to Order via `orderId` field. Order lifecycle is independent of Payment.
+* **Order:** Represents an individual customer purchase with associated items, status, and total computation logic. Can be marked as 'paid' upon successful payment.
+* **PriorityOrder:** Specialized Order with additional fee for expedited processing. Overrides total calculation to include priority fee.
+* **VIPOrder:** Enhanced type of order specifically for VIP customers; applies an extra vipFee charge.
+* **Payment:** Represents a payment transaction for an order, including references to the payment provider, amount, and transaction status. Can check if payment has completed successfully.
+* **Refund:** Tracks refund attempts or completions for a specific payment, including amount, reason for refund, and processing status. Has logic for approval and completion steps.
