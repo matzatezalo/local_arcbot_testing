@@ -162,18 +162,18 @@ PROMPT="${PROMPT//%CODEBASE%/$CODEBASE_CONTEXT}"
 
 # Handle user feedback if provided
 if [[ -n "${COMMENT_BODY:-}" ]]; then
-    FEEDBACK_SECTION="User Feedback / Requirements:
-$COMMENT_BODY
-
-Please incorporate this feedback into your diagram generation. Adjust entities, relationships, flows, and structure as needed to address the user's requirements."
+    # Use printf to safely escape the feedback for sed
+    FEEDBACK_SECTION=$(printf 'User Feedback / Requirements:\n%s\n\nPlease incorporate this feedback into your diagram generation. Adjust entities, relationships, flows, and structure as needed to address the user'\''s requirements.' "$COMMENT_BODY")
+    # Use sed with a different delimiter to avoid issues with the content
+    PROMPT=$(echo "$PROMPT" | sed 's|%FEEDBACK_SECTION%|'"$(printf '%s\n' "$FEEDBACK_SECTION" | sed -e 's/[\/&]/\\&/g')"'|')
+    echo "DEBUG: Feedback section included: ${#FEEDBACK_SECTION} characters"
 else
-    FEEDBACK_SECTION=""
+    PROMPT="${PROMPT//%FEEDBACK_SECTION%/}"
+    echo "DEBUG: No feedback provided, feedback section removed"
 fi
 
-PROMPT="${PROMPT//%FEEDBACK_SECTION%/$FEEDBACK_SECTION}"
-
-# Remove empty feedback section if not provided
-PROMPT="${PROMPT//$'\n\n\n'/$'\n\n'}"
+# Remove extra blank lines
+PROMPT=$(echo "$PROMPT" | sed '/^[[:space:]]*$/N;/^\n$/D')
 
 # Set OpenAI model (default: gpt-4.1)
 OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
