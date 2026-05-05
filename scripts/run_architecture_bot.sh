@@ -99,20 +99,26 @@ print_success "Diff mode: ${CONTEXT_SIZE} characters (diff + existing diagram fi
 print_step "Calling OpenAI API..."
 
 if [[ -z "${OPENAI_API_KEY:-}" ]]; then
-    print_error "OPENAI_API_KEY environment variable not set. Please export your OpenAI API key."
+    print_error "OPENAI_API_KEY env variable not set. Please export your OpenAI API key."
     exit 1
 fi
 
-# Set context header for the prompt
-CONTEXT_HEADER="Analyze the following PR diff (all changes since the base commit). Existing architecture diagrams are appended after the diff — update them to reflect the changes:"
-
-# Build the prompt
-read -r -d '' PROMPT << 'PROMPT_END' || true
+# Build the SYSTEM message (standing instructions - non-negotiable rules)
+read -r -d '' SYSTEM_MESSAGE << 'SYSTEM_END' || true
 You are an expert software architect. Your ONLY task is to generate architecture diagrams in Mermaid.js format.
 
-You MUST follow these rules EXACTLY from SKILL.md:
-%SKILL%
+You MUST follow these rules EXACTLY. These are non-negotiable:
 
+%SKILL%
+SYSTEM_END
+
+SYSTEM_MESSAGE="${SYSTEM_MESSAGE//%SKILL%/$SKILL}"
+
+# Set context header for the USER prompt
+CONTEXT_HEADER="Analyze the following PR diff (all changes since the base commit). Existing architecture diagrams are appended after the diff — update them to reflect the changes:"
+
+# Build the USER message (data to analyze)
+read -r -d '' PROMPT << 'PROMPT_END' || true
 %CONTEXT_HEADER%
 %DIFF%
 
@@ -154,8 +160,7 @@ CRITICAL REQUIREMENTS:
 - Content must include complete Mermaid diagrams, not placeholders
 PROMPT_END
 
-# Replace placeholders - build prompt safely
-PROMPT="${PROMPT//%SKILL%/$SKILL}"
+# Replace placeholders in user message
 PROMPT="${PROMPT//%DIFF%/$DIFF_CONTEXT}"
 PROMPT="${PROMPT//%CONTEXT_HEADER%/$CONTEXT_HEADER}"
 
@@ -183,8 +188,11 @@ PROMPT=$(echo "$PROMPT" | sed '/^[[:space:]]*$/N;/^\n$/D')
 # Set OpenAI model (default: gpt-4.1)
 OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
 
-# Create the request JSON
-# Write prompt to temp file for jq to avoid "Argument list too long"
+# Create the request JSON with system and user messages
+# Write messages to temp files for jq to avoid "Argument list too long"
+SYSTEM_FILE=$(mktemp)
+printf '%s' "$SYSTEM_MESSAGE" > "$SYSTEM_FILE"
+
 PROMPT_FILE=$(mktemp)
 printf '%s' "$PROMPT" > "$PROMPT_FILE"
 
@@ -193,23 +201,28 @@ REQUEST_FILE=$(mktemp)
 jq -n \
     --arg model "$OPENAI_MODEL" \
     --argjson max_tokens 8000 \
-    --rawfile content "$PROMPT_FILE" \
+    --rawfile system "$SYSTEM_FILE" \
+    --rawfile user "$PROMPT_FILE" \
     '{
         model: $model,
         max_tokens: $max_tokens,
         messages: [
             {
+                role: "system",
+                content: $system
+            },
+            {
                 role: "user",
-                content: $content
+                content: $user
             }
         ]
     }' > "$REQUEST_FILE" 2>&1 || {
     print_error "Failed to build request JSON with jq"
-    rm -f "$PROMPT_FILE" "$REQUEST_FILE"
+    rm -f "$SYSTEM_FILE" "$PROMPT_FILE" "$REQUEST_FILE"
     exit 1
 }
 
-rm -f "$PROMPT_FILE"
+rm -f "$SYSTEM_FILE" "$PROMPT_FILE"
 
 # Call OpenAI API
 print_step "Sending request to OpenAI..."
