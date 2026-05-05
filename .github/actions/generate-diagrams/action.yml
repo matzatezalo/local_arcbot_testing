@@ -47,11 +47,13 @@ runs:
       id: check
       shell: bash
       run: |
-        if git diff --quiet docs/architecture/; then
+        # Stage generated diagrams to check if they differ from what's committed
+        git add docs/architecture/ 2>/dev/null || true
+        if git diff --cached --quiet docs/architecture/; then
           echo "changed=false" >> $GITHUB_OUTPUT
         else
           echo "changed=true" >> $GITHUB_OUTPUT
-          git diff docs/architecture/ > diagram_changes.diff
+          git diff --cached docs/architecture/ > diagram_changes.diff
         fi
 
     - name: Upload diagram diff
