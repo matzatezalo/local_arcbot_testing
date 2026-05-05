@@ -28,9 +28,6 @@ classDiagram
         + priorityFee: float
         + calculateTotal()
     }
-    class VIPOrder {
-        % Add any attributes or methods if directly declared, else leave empty for now
-    }
     class Payment {
         + orderId: string
         + amount: float
@@ -50,7 +47,6 @@ classDiagram
     }
 
     PriorityOrder --|> Order
-    VIPOrder --|> Order
     ApiGateway --> Order
     ApiGateway --> Payment
     ApiGateway --> Refund
@@ -63,6 +59,5 @@ classDiagram
 * **ApiGateway:** Aggregates business logic for orders, payments, and refunds; exposes facade for external callers.
 * **Order:** Represents a customer order, tracks purchased items, total, status, and unique orderId.
 * **PriorityOrder:** Specialized Order with additional priorityFee and an overridden total calculation.
-* **VIPOrder:** Specialized Order type for VIP customers. (No unique attributes/methods declared.)
 * **Payment:** Tracks completion and provider reference of a payment for an order; determines success state.
 * **Refund:** Manages refund approvals and completion for a payment, containing reason and unique refundId.
