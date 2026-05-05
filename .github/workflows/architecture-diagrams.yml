@@ -10,7 +10,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
     outputs:
       diagrams-changed: ${{ steps.generate.outputs.changed }}
