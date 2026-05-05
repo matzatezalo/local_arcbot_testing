@@ -1,6 +1,7 @@
 # Architecture Model: Domain
 
 **Generated on:** April 28, 2026
+
 **Source Scope:** `src`
 
 ## Mermaid Diagram
@@ -27,6 +28,8 @@ classDiagram
         + priorityFee: float
         + calculateTotal()
     }
+    class VIPOrder {
+    }
     class Payment {
         + orderId: string
         + amount: float
@@ -46,6 +49,7 @@ classDiagram
     }
 
     PriorityOrder --|> Order
+    VIPOrder --|> Order
     ApiGateway --> Order
     ApiGateway --> Payment
     ApiGateway --> Refund
@@ -58,5 +62,6 @@ classDiagram
 * **ApiGateway:** Aggregates business logic for orders, payments, and refunds; exposes facade for external callers.
 * **Order:** Represents a customer order, tracks purchased items, total, status, and unique orderId.
 * **PriorityOrder:** Specialized Order with additional priorityFee and an overridden total calculation.
+* **VIPOrder:** Specialized Order for VIPs; derives from Order and can be further extended with VIP-specific logic.
 * **Payment:** Tracks completion and provider reference of a payment for an order; determines success state.
 * **Refund:** Manages refund approvals and completion for a payment, containing reason and unique refundId.
