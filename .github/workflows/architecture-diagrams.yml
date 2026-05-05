@@ -115,6 +115,7 @@ jobs:
             });
 
       - name: Re-generate diagrams
+        id: generate
         uses: ./.github/actions/generate-diagrams
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
@@ -123,42 +124,25 @@ jobs:
           base_sha: ${{ steps.pr.outputs.base_sha }}
           comment_body: ${{ github.event.comment.body }}
 
-      - name: Commit diagram updates
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git add docs/architecture/ 2>/dev/null || true
-          if ! git diff --cached --quiet docs/architecture/; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "feat: Updated architecture diagrams based on feedback"
-            git push "https://${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" HEAD:${{ steps.pr.outputs.head_ref }}
-            echo "committed=true" >> $GITHUB_OUTPUT
-          else
-            echo "committed=false" >> $GITHUB_OUTPUT
-          fi
-        id: commit
-
       - name: Post update summary
         uses: actions/github-script@v7
         with:
           script: |
-            const committed = '${{ steps.commit.outputs.committed }}' === 'true';
-            
-            if (committed) {
+            const changed = '${{ steps.generate.outputs.changed }}' === 'true';
+
+            if (changed) {
               const fs = require('fs');
               const dirents = fs.readdirSync('docs/architecture', { withFileTypes: true });
               const files = dirents
                 .filter(d => d.isFile() && d.name.endsWith('.md'))
                 .map(d => `- \`${d.name}\``)
                 .join('\n');
-              
+
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: '✅ Diagrams updated and committed!\n\n'
+                body: '✅ Diagrams updated based on your feedback!\n\n'
                   + files + '\n\n'
                   + '👉 **View changes in the "Files changed" tab**'
               });
