@@ -28,9 +28,6 @@ classDiagram
         + priorityFee: float
         + calculateTotal()
     }
-    class MostImportantOrder {
-        + calculateTotal()
-    }
     class Payment {
         + orderId: string
         + amount: float
@@ -50,7 +47,6 @@ classDiagram
     }
 
     PriorityOrder --|> Order
-    MostImportantOrder --|> Order
     ApiGateway --> Order
     ApiGateway --> Payment
     ApiGateway --> Refund
@@ -60,9 +56,8 @@ classDiagram
 
 ## Entity Dictionary
 
-* **ApiGateway:** Aggregates business logic for orders, payments, and refunds; exposes facade for external callers.
-* **Order:** Represents a customer order, tracks purchased items, total, status, and unique orderId.
-* **PriorityOrder:** Specialized Order with additional priorityFee and an overridden total calculation.
-* **MostImportantOrder:** Specialized Order with potentially distinct business logic (e.g., enhanced priority), inherits from Order.
-* **Payment:** Tracks completion and provider reference of a payment for an order; determines success state.
-* **Refund:** Manages refund approvals and completion for a payment, containing reason and unique refundId.
+* **ApiGateway:** Facade for order/payment/refund flow coordination, delegates actions to lower-level services and repositories.
+* **Order:** Customer order holding order state, items, and calculation logic.
+* **PriorityOrder:** Specialized Order with an additional priority fee and override for total calculation.
+* **Payment:** Represents a monetary operation against an order with provider references and status evaluation.
+* **Refund:** Represents a refund operation associated to a Payment, containing approval/completion logic.
