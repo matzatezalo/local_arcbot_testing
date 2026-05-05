@@ -56,8 +56,8 @@ classDiagram
 
 ## Entity Dictionary
 
-* **ApiGateway:** Facade for order/payment/refund flow coordination, delegates actions to lower-level services and repositories.
-* **Order:** Customer order holding order state, items, and calculation logic.
-* **PriorityOrder:** Specialized Order with an additional priority fee and override for total calculation.
-* **Payment:** Represents a monetary operation against an order with provider references and status evaluation.
-* **Refund:** Represents a refund operation associated to a Payment, containing approval/completion logic.
+* **ApiGateway:** Serves as the primary facade for all order, payment, and refund processes. It coordinates requests and delegates underlying logic to proper services and repositories.
+* **Order:** Represents a customer's purchase order, maintaining purchased items, status, and total value calculation logic.
+* **PriorityOrder:** Subclass of Order that adds a priority fee and customizes total calculation.
+* **Payment:** Records payment transactions for an order, holding amount, external provider info, and current status. Includes a method to determine if payment was successful.
+* **Refund:** Details refund operations tied to a specific payment, holding refund status, amount, and business logic for approval and completion.
