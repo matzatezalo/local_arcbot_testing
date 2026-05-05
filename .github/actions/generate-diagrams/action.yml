@@ -43,15 +43,21 @@ runs:
         export COMMENT_BODY BASE_SHA
         bash scripts/run_architecture_bot.sh
 
-    - name: Check if diagrams changed
+    - name: Commit and push diagram changes
       id: check
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
       run: |
-        if git diff --quiet docs/architecture/; then
+        git add docs/architecture/ 2>/dev/null || true
+        if git diff --cached --quiet docs/architecture/; then
           echo "changed=false" >> $GITHUB_OUTPUT
         else
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat: Generated architecture diagrams"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:${{ inputs.head_ref }}
           echo "changed=true" >> $GITHUB_OUTPUT
-          git diff docs/architecture/ > diagram_changes.diff
         fi
 
     - name: Upload diagram diff
