@@ -38,13 +38,9 @@ runs:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
         COMMENT_BODY: ${{ inputs.comment_body }}
+        BASE_SHA: ${{ inputs.base_sha }}
       run: |
-        export COMMENT_BODY
-        if [[ -d "docs/architecture" ]]; then
-          export ANALYSIS_PATHS="src docs/architecture"
-        else
-          export ANALYSIS_PATHS="src"
-        fi
+        export COMMENT_BODY BASE_SHA
         bash scripts/run_architecture_bot.sh
 
     - name: Check if diagrams changed
