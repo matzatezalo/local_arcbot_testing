@@ -24,6 +24,16 @@ classDiagram
         + calculateTotal()
         + markPaid()
     }
+    class PriorityOrder {
+        + priorityFee: float
+        + calculateTotal()
+    }
+    class ImportantOrder {
+        + specialInstructions: string
+    }
+    class EvenMoreImportantOrder {
+        + escalationLevel: int
+    }
     class Payment {
         + orderId: string
         + amount: float
@@ -46,11 +56,17 @@ classDiagram
     ApiGateway --> Refund
     Payment "1" o-- "1" Order
     Refund "1" o-- "1" Payment
+    PriorityOrder --|> Order
+    ImportantOrder --|> Order
+    EvenMoreImportantOrder --|> ImportantOrder
 ```
 
 ## Entity Dictionary
 
-* **ApiGateway:** Serves as the primary facade for all order, payment, and refund processes. It coordinates requests and delegates underlying logic to the appropriate internal logic and models.
+* **ApiGateway:** Serves as the primary facade for all order, payment, and refund processes. Coordinates requests and delegates underlying logic to appropriate internal logic and models.
 * **Order:** Represents a customer's purchase order, maintaining purchased items, identifiers, status, and total value calculation logic.
+* **PriorityOrder:** An extension of Order for rush purchases, adding a priority fee and overriding total calculation.
+* **ImportantOrder:** Inherits from Order, representing high-importance orders and typically holding special instructions.
+* **EvenMoreImportantOrder:** Inherits from ImportantOrder, modeling top-priority orders with escalation levels.
 * **Payment:** Records payment transactions for an order, holding amount, external provider info, and current status. Includes a method to determine if payment was successful.
 * **Refund:** Details refund operations tied to a specific payment, holding refund status, amount, and business logic for approval and completion.
