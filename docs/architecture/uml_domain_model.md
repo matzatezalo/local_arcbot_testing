@@ -24,16 +24,6 @@ classDiagram
         + calculateTotal()
         + markPaid()
     }
-    class PriorityOrder {
-        + priorityFee: float
-        + calculateTotal()
-    }
-    class VIPOrder {
-        + vipLevel: int
-        + concierge: string
-        + orderId: string
-        + calculateTotal()
-    }
     class Payment {
         + orderId: string
         + amount: float
@@ -51,8 +41,6 @@ classDiagram
         + approve()
         + complete()
     }
-    PriorityOrder --|> Order
-    VIPOrder o-- Order
     ApiGateway --> Order
     ApiGateway --> Payment
     ApiGateway --> Refund
@@ -62,9 +50,7 @@ classDiagram
 
 ## Entity Dictionary
 
-* **ApiGateway:** Serves as the primary facade for all order, payment, and refund processes. It coordinates requests and delegates underlying logic to proper services and repositories.
-* **Order:** Represents a customer's purchase order, maintaining purchased items, status, and total value calculation logic.
-* **PriorityOrder:** Subclass of Order that adds a priority fee and customizes total calculation.
-* **VIPOrder:** Distinct order variant associated with an existing Order (aggregation), holds VIP-specific details and custom total calculation.
+* **ApiGateway:** Serves as the primary facade for all order, payment, and refund processes. It coordinates requests and delegates underlying logic to the appropriate internal logic and models.
+* **Order:** Represents a customer's purchase order, maintaining purchased items, identifiers, status, and total value calculation logic.
 * **Payment:** Records payment transactions for an order, holding amount, external provider info, and current status. Includes a method to determine if payment was successful.
 * **Refund:** Details refund operations tied to a specific payment, holding refund status, amount, and business logic for approval and completion.
