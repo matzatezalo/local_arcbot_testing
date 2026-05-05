@@ -99,7 +99,7 @@ print_success "Diff mode: ${CONTEXT_SIZE} characters (diff + existing diagram fi
 print_step "Calling OpenAI API..."
 
 if [[ -z "${OPENAI_API_KEY:-}" ]]; then
-    print_error "OPENAI_API_KEY environment variable not set. Please export your OpenAI API key."
+    print_error "OPENAI_API_KEY env variable not set. Please export your OpenAI API key."
     exit 1
 fi
 
