@@ -128,12 +128,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ! git diff --quiet docs/architecture/; then
+          git add docs/architecture/ 2>/dev/null || true
+          if ! git diff --cached --quiet docs/architecture/; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add docs/architecture/
             git commit -m "feat: Updated architecture diagrams based on feedback"
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ steps.pr.outputs.head_ref }}
+            git push "https://${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" HEAD:${{ steps.pr.outputs.head_ref }}
             echo "committed=true" >> $GITHUB_OUTPUT
           else
             echo "committed=false" >> $GITHUB_OUTPUT
