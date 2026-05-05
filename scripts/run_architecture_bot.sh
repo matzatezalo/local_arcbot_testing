@@ -53,61 +53,48 @@ else
     print_warning "No COMMENT_BODY environment variable detected"
 fi
 
-# Collect codebase context
-print_step "Collecting codebase context..."
+# Collect diff context
+print_step "Collecting diff context..."
 
-# Get paths from command-line args or ANALYSIS_PATHS env var (required)
-if [[ $# -gt 0 ]]; then
-    IFS=' ' read -ra PATHS <<< "$@"
-elif [[ -n "${ANALYSIS_PATHS:-}" ]]; then
-    IFS=' ' read -ra PATHS <<< "$ANALYSIS_PATHS"
-else
-    print_error "No analysis paths provided"
-    echo "Usage:" >&2
-    echo "  bash scripts/run_architecture_bot.sh <path1> [path2] ..." >&2
-    echo "OR" >&2
-    echo "  ANALYSIS_PATHS='<path1> [path2] ...' bash scripts/run_architecture_bot.sh" >&2
-    echo "" >&2
-    echo "Examples:" >&2
-    echo "  bash scripts/run_architecture_bot.sh src" >&2
-    echo "  bash scripts/run_architecture_bot.sh src docs/architecture" >&2
-    echo "  ANALYSIS_PATHS='src' bash scripts/run_architecture_bot.sh" >&2
+# Generate diff from CI (BASE_SHA should be set)
+if [[ -z "${BASE_SHA:-}" ]]; then
+    print_error "BASE_SHA env var not set — this script must be run via the CI action"
     exit 1
 fi
 
-echo "   Analyzing paths: ${PATHS[*]}"
+# Generate the full PR diff between merge-base and HEAD
+GIT_DIFF=$(git diff "${BASE_SHA}...HEAD" 2>/dev/null || true)
 
-CODEBASE_CONTEXT=""
-FILE_COUNT=0
+if [[ -z "$GIT_DIFF" ]]; then
+    print_warning "No changes in this PR — skipping diagram generation"
+    exit 0
+fi
 
-for path_pattern in "${PATHS[@]}"; do
-    if [[ -f "$path_pattern" ]]; then
-        # Single file - include all files
-        CONTENT=$(cat "$path_pattern" 2>/dev/null || true)
-        CODEBASE_CONTEXT+=$'\n\n'"# File: $path_pattern"$'\n'"'"'```'"'"$'\n'"$CONTENT"$'\n'"'"'```'"'"
-        ((FILE_COUNT++))
-    elif [[ -d "$path_pattern" ]]; then
-        # Directory - find all files
-        # Temporarily disable pipefail to handle find command gracefully
-        set +o pipefail
-        while IFS= read -r source_file; do
-            if [[ ! "$source_file" =~ __pycache__ ]] && [[ ! "$source_file" =~ \.git ]]; then
-                CONTENT=$(cat "$source_file" 2>/dev/null || true)
-                CODEBASE_CONTEXT+=$'\n\n'"# File: $source_file"$'\n'"'"'```'"'"$'\n'"$CONTENT"$'\n'"'"'```'"'"
-                ((FILE_COUNT++)) || true
-            fi
-        done < <(find "$path_pattern" -type f 2>/dev/null || true)
-        set -o pipefail
-    fi
-done
+# Strip binary file annotations (non-text, would corrupt JSON payload)
+CLEAN_DIFF=$(echo "$GIT_DIFF" | grep -v "^Binary files ")
 
-if [[ -z "$CODEBASE_CONTEXT" ]]; then
-    print_error "No codebase context found"
+if [[ -z "$CLEAN_DIFF" ]]; then
+    print_error "GIT_DIFF contained only binary file changes — no text diff to analyze"
     exit 1
 fi
 
-CONTEXT_SIZE=${#CODEBASE_CONTEXT}
-print_success "Collected $FILE_COUNT files (${CONTEXT_SIZE} characters of code)"
+DIFF_CONTEXT="# PR Git Diff"$'\n\n''```diff'$'\n'"$CLEAN_DIFF"$'\n''```'
+FILE_COUNT=1
+
+# Append existing architecture docs so model can update them in context
+if [[ -d "docs/architecture" ]]; then
+    print_step "Appending existing docs/architecture files..."
+    set +o pipefail
+    while IFS= read -r arch_file; do
+        CONTENT=$(cat "$arch_file" 2>/dev/null || true)
+        DIFF_CONTEXT+=$'\n\n'"# Existing Diagram: $arch_file"$'\n''```'$'\n'"$CONTENT"$'\n''```'
+        ((FILE_COUNT++)) || true
+    done < <(find "docs/architecture" -type f -name "*.md" 2>/dev/null || true)
+    set -o pipefail
+fi
+
+CONTEXT_SIZE=${#DIFF_CONTEXT}
+print_success "Diff mode: ${CONTEXT_SIZE} characters (diff + existing diagram file(s))"
 
 print_step "Calling OpenAI API..."
 
@@ -116,6 +103,9 @@ if [[ -z "${OPENAI_API_KEY:-}" ]]; then
     exit 1
 fi
 
+# Set context header for the prompt
+CONTEXT_HEADER="Analyze the following PR diff (all changes since the base commit). Existing architecture diagrams are appended after the diff — update them to reflect the changes:"
+
 # Build the prompt
 read -r -d '' PROMPT << 'PROMPT_END' || true
 You are an expert software architect. Your ONLY task is to generate architecture diagrams in Mermaid.js format.
@@ -123,8 +113,8 @@ You are an expert software architect. Your ONLY task is to generate architecture
 You MUST follow these rules EXACTLY from SKILL.md:
 %SKILL%
 
-Analyze this codebase:
-%CODEBASE%
+%CONTEXT_HEADER%
+%DIFF%
 
 %FEEDBACK_SECTION%
 
@@ -166,7 +156,8 @@ PROMPT_END
 
 # Replace placeholders - build prompt safely
 PROMPT="${PROMPT//%SKILL%/$SKILL}"
-PROMPT="${PROMPT//%CODEBASE%/$CODEBASE_CONTEXT}"
+PROMPT="${PROMPT//%DIFF%/$DIFF_CONTEXT}"
+PROMPT="${PROMPT//%CONTEXT_HEADER%/$CONTEXT_HEADER}"
 
 # Handle user feedback if provided
 if [[ -n "${COMMENT_BODY:-}" ]]; then
@@ -193,10 +184,16 @@ PROMPT=$(echo "$PROMPT" | sed '/^[[:space:]]*$/N;/^\n$/D')
 OPENAI_MODEL="${OPENAI_MODEL:-gpt-4.1-2025-04-14}"
 
 # Create the request JSON
-REQUEST_JSON=$(jq -n \
+# Write prompt to temp file for jq to avoid "Argument list too long"
+PROMPT_FILE=$(mktemp)
+printf '%s' "$PROMPT" > "$PROMPT_FILE"
+
+# Write request JSON to temp file for curl to avoid "Argument list too long"
+REQUEST_FILE=$(mktemp)
+jq -n \
     --arg model "$OPENAI_MODEL" \
     --argjson max_tokens 8000 \
-    --arg content "$PROMPT" \
+    --rawfile content "$PROMPT_FILE" \
     '{
         model: $model,
         max_tokens: $max_tokens,
@@ -206,18 +203,23 @@ REQUEST_JSON=$(jq -n \
                 content: $content
             }
         ]
-    }' 2>&1) || {
+    }' > "$REQUEST_FILE" 2>&1 || {
     print_error "Failed to build request JSON with jq"
-    echo "Error: $REQUEST_JSON" >&2
+    rm -f "$PROMPT_FILE" "$REQUEST_FILE"
     exit 1
 }
 
+rm -f "$PROMPT_FILE"
+
 # Call OpenAI API
+print_step "Sending request to OpenAI..."
 RESPONSE=$(curl -s -X POST \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $OPENAI_API_KEY" \
-    -d "$REQUEST_JSON" \
+    --data-binary @"$REQUEST_FILE" \
     "https://api.openai.com/v1/chat/completions" 2>&1)
+
+rm -f "$REQUEST_FILE"
 
 
 # Check for API errors
